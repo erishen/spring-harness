@@ -2,8 +2,10 @@ package com.example.springharness.util;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -24,6 +26,9 @@ public final class ContextGuard {
 
     /** 消息历史总字符阈值（按真实消息开销估算），超过则裁剪 */
     public static final int MAX_HISTORY_CHARS = 40000;
+
+    /** 折叠摘要前缀标记，用于识别「已压缩的早期上下文」，避免重复套娃折叠 */
+    private static final String SUMMARY_PREFIX = "【早期工具执行记录·已压缩】";
 
     private ContextGuard() {}
 
@@ -64,8 +69,10 @@ public final class ContextGuard {
     }
 
     /**
-     * 裁剪消息历史：当真实消息开销超过阈值时，从最旧的 assistant/tool 往返开始删除。
-     * 始终保留 system(0) 和 user(1)（任务描述），只裁剪中间的工具调用往返。
+     * 压缩消息历史：当真实消息开销超过阈值时，优先把最旧的 assistant/tool 往返
+     * 「折叠」成一条轻量摘要（保留工具名 + 截断参数/结论 + 思考，零 LLM 调用），
+     * 仅当无法折叠（如孤立 tool response）才直接丢弃。
+     * 始终保留 system(0) 和 user(1)（任务描述）。
      */
     public static void trimMessages(List<Message> messages, int maxChars) {
         if (messages.size() <= 2) return;
@@ -74,11 +81,85 @@ public final class ContextGuard {
             total += estimateMessageChars(m);
         }
         int guard = 0;
-        // 保留前 2 条（system + user），从 index 2 开始删除最旧的历史
+        // 保留前 2 条（system + user），从 index 2 开始压缩最旧的历史
         while (total > maxChars && messages.size() > 2 && guard++ < 500) {
-            Message removed = messages.remove(2);
-            total -= estimateMessageChars(removed);
+            if (compactOldestRoundTrip(messages)) {
+                // 折叠成功：重新累计真实开销
+                total = 0;
+                for (Message m : messages) {
+                    total += estimateMessageChars(m);
+                }
+            } else {
+                Message removed = messages.remove(2);
+                total -= estimateMessageChars(removed);
+            }
         }
+    }
+
+    /**
+     * 将消息列表中最旧的一组完整往返（一条 assistant 及随后的 tool response）折叠成一条轻量摘要。
+     * 摘要保留工具名 + 截断的参数/输出 + assistant 思考，丢弃冗长原始内容。
+     *
+     * @return true 表示折叠成功并已替换进列表；false 表示无法折叠（调用方将直接丢弃）
+     */
+    private static boolean compactOldestRoundTrip(List<Message> messages) {
+        if (messages.size() < 3) return false;
+        int i = 2;
+        Message first = messages.get(i);
+        // 孤立的 tool response：无关联的 assistant 思考，直接丢弃更干净
+        if (first instanceof ToolResponseMessage) {
+            return false;
+        }
+        // 最旧已是压缩摘要：不再次套娃折叠，返回 false 由调用方直接丢弃（价值最低）
+        if (first.getText() != null && first.getText().startsWith(SUMMARY_PREFIX)) {
+            return false;
+        }
+        // 收集一组往返：一条 assistant（可能带 toolCalls）+ 随后的若干 tool responses
+        StringBuilder sb = new StringBuilder(SUMMARY_PREFIX);
+        appendMessageSummary(sb, first);
+        int j = i + 1;
+        while (j < messages.size() && messages.get(j) instanceof ToolResponseMessage trm) {
+            appendMessageSummary(sb, trm);
+            j++;
+        }
+        // 用折叠摘要替换原区间 [i, j)
+        List<Message> sub = messages.subList(i, j);
+        sub.clear();
+        messages.add(i, new SystemMessage(sb.toString()));
+        return true;
+    }
+
+    /** 把单条消息折叠成一行摘要 */
+    private static void appendMessageSummary(StringBuilder sb, Message msg) {
+        if (msg instanceof AssistantMessage am) {
+            String text = am.getText();
+            if (text != null && !text.isBlank()) {
+                sb.append("\n- 思考: ").append(truncate(text, 240));
+            }
+            if (am.getToolCalls() != null) {
+                for (AssistantMessage.ToolCall tc : am.getToolCalls()) {
+                    sb.append("\n- 调用 ").append(tc.name())
+                            .append("(").append(truncate(tc.arguments(), 80)).append(")");
+                }
+            }
+        } else if (msg instanceof ToolResponseMessage trm) {
+            if (trm.getResponses() != null) {
+                for (ToolResponseMessage.ToolResponse tr : trm.getResponses()) {
+                    String name = tr.name() != null ? tr.name() : "tool";
+                    sb.append("\n  → ").append(name).append(": ")
+                            .append(truncate(tr.responseData(), 240));
+                }
+            }
+        } else {
+            sb.append("\n- ").append(truncate(msg.getText(), 240));
+        }
+    }
+
+    /** 截断字符串，超过 max 保留头部并加省略号 */
+    private static String truncate(String s, int max) {
+        if (s == null) return "";
+        if (s.length() <= max) return s;
+        return s.substring(0, max) + "…";
     }
 
     /**

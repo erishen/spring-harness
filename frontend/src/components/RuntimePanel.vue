@@ -55,6 +55,38 @@
           </div>
         </div>
 
+        <!-- 最近知识库检索链路（search_knowledge 流水线） -->
+        <div class="tool-group rag-trace" v-if="hasRagTool">
+          <div class="group-label">
+            <span class="group-dot rag"></span>
+            <span>最近知识库检索</span>
+            <span class="group-count" v-if="trace && trace.exists">{{ trace.trace.durationMs }}ms</span>
+          </div>
+
+          <div v-if="trace && trace.exists" class="rag-trace-body">
+            <div class="rag-trace-query">🔍 {{ trace.trace.query }}</div>
+            <div class="rag-trace-flow">
+              <span class="flow-node">候选 {{ trace.trace.candidateCount }}</span>
+              <span class="flow-arrow">→</span>
+              <span class="flow-node" :class="{ warn: trace.trace.rankMethod !== 'rerank' }">
+                {{ trace.trace.rankMethod === 'rerank' ? 'Rerank 精排' : '回退向量' }}
+              </span>
+              <span class="flow-arrow">→</span>
+              <span class="flow-node">返回 {{ trace.trace.returnedCount }}</span>
+            </div>
+            <div v-if="trace.trace.fragments && trace.trace.fragments.length" class="rag-trace-frags">
+              <div v-for="(f, fi) in trace.trace.fragments.slice(0, 3)" :key="fi" class="rag-trace-frag">
+                <div class="rag-trace-frag-head">
+                  <span class="rag-frag-source">{{ f.source || '未知来源' }}</span>
+                  <span v-if="f.score != null" class="rag-frag-score">{{ Number(f.score).toFixed(3) }}</span>
+                </div>
+                <div class="rag-frag-snippet">{{ f.snippet }}</div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="rag-trace-empty">尚未执行知识库检索</div>
+        </div>
+
         <div class="empty-hint" v-if="!tools.length">加载中...</div>
       </div>
     </div>
@@ -146,7 +178,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 
 // Runtime 面板
 const tools = ref([])
@@ -154,6 +186,10 @@ const mcpStatus = ref({ enabled: false, toolCount: 0, servers: [] })
 const sandboxStatus = ref({ enabled: false, supportedLanguages: [], config: null })
 const skills = ref([])
 const skillsEnabled = ref(false)
+
+// 最近一次知识库检索链路
+const trace = ref(null)
+let traceTimer = null
 
 // 折叠状态
 const toolsExpanded = ref(false)
@@ -164,6 +200,7 @@ const localToolCount = computed(() => tools.value.filter(t => !t.fromMcp).length
 const mcpToolCount = computed(() => tools.value.filter(t => t.fromMcp).length)
 const localTools = computed(() => tools.value.filter(t => !t.fromMcp))
 const mcpTools = computed(() => tools.value.filter(t => t.fromMcp))
+const hasRagTool = computed(() => tools.value.some(t => t.name === 'search_knowledge'))
 
 // 按服务器分组 MCP 工具
 const mcpServers = computed(() => {
@@ -231,11 +268,31 @@ async function loadSkills() {
   }
 }
 
+// 轮询最近一次知识库检索链路
+async function loadTrace() {
+  try {
+    const res = await fetch('/rag/search-trace')
+    if (res.ok) {
+      const data = await res.json()
+      if (data.exists) trace.value = data
+    }
+  } catch (e) {
+    // 忽略瞬时失败，等待下轮轮询
+  }
+}
+
 onMounted(() => {
   loadTools()
   loadMcpStatus()
   loadSandboxStatus()
   loadSkills()
+  loadTrace()
+  traceTimer = setInterval(loadTrace, 2500)
+})
+
+onBeforeUnmount(() => {
+  if (traceTimer) clearInterval(traceTimer)
+  traceTimer = null
 })
 </script>
 
@@ -355,11 +412,98 @@ onMounted(() => {
 }
 .group-dot.local { background: #3b82f6; }
 .group-dot.mcp { background: #10b981; }
+.group-dot.rag { background: #8b5cf6; }
 .group-count {
   margin-left: auto;
   font-size: 10px;
   color: #9ca3af;
   font-weight: 500;
+}
+
+/* 最近知识库检索链路 */
+.rag-trace-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.rag-trace-query {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4b5563;
+  word-break: break-all;
+  line-height: 1.4;
+}
+.rag-trace-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 10px;
+}
+.flow-node {
+  background: #f5f3ff;
+  color: #6d28d9;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+.flow-node.warn {
+  background: #fef3c7;
+  color: #b45309;
+}
+.flow-arrow {
+  color: #c4b5fd;
+  font-size: 11px;
+}
+.rag-trace-frags {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.rag-trace-frag {
+  background: #fafafb;
+  border: 1px solid #eef0f3;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+.rag-trace-frag-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+.rag-frag-source {
+  font-size: 10px;
+  font-weight: 600;
+  color: #8b5cf6;
+  font-family: 'SF Mono', Monaco, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rag-frag-score {
+  font-size: 10px;
+  font-weight: 600;
+  color: #059669;
+  font-family: 'SF Mono', Monaco, monospace;
+  flex-shrink: 0;
+}
+.rag-frag-snippet {
+  font-size: 10px;
+  color: #6b7280;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rag-trace-empty {
+  font-size: 10px;
+  color: #9ca3af;
+  font-style: italic;
+  padding: 2px 0;
 }
 
 /* 工具网格 - chip 样式 */

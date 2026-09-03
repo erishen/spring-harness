@@ -2,6 +2,7 @@ package com.example.springharness.controller;
 
 import com.example.springharness.rag.DocumentInfo;
 import com.example.springharness.rag.RagService;
+import com.example.springharness.tool.RagSearchTool;
 import org.springframework.ai.document.Document;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -86,5 +87,21 @@ public class RagController {
                         "docId", doc.getMetadata().getOrDefault("docId", "")
                 ))
                 .toList();
+    }
+
+    /**
+     * 最近一次 search_knowledge 工具调用的检索链路（供 Runtime 面板展示流水线）。
+     * 返回 { exists, trace: { query, candidateCount, returnedCount, rankMethod, durationMs, fragments: [...] } }
+     */
+    @GetMapping("/search-trace")
+    public Map<String, Object> searchTrace() {
+        RagSearchTool.SearchTrace trace = RagSearchTool.getLastTrace();
+        if (trace == null) {
+            return Map.of("exists", false);
+        }
+        return Map.of(
+                "exists", true,
+                "trace", trace
+        );
     }
 }

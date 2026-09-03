@@ -30,6 +30,20 @@ public final class ContextGuard {
     /** 折叠摘要前缀标记，用于识别「已压缩的早期上下文」，避免重复套娃折叠 */
     private static final String SUMMARY_PREFIX = "【早期工具执行记录·已压缩】";
 
+    /** LLM 语义摘要的最大字符数（超出截断） */
+    public static final int MAX_SUMMARY_CHARS = 4000;
+
+    /** 可选：LLM 语义摘要器（由配置类在开关开启时注入；为空时使用零成本的轻量折叠） */
+    private static volatile java.util.function.Function<List<Message>, String> llmSummarizer;
+
+    /**
+     * 注入 / 移除 LLM 语义摘要器。
+     * @param summarizer 将一组最旧往返压缩为一段语义摘要文本；传 null 恢复轻量折叠
+     */
+    public static void setLlmSummarizer(java.util.function.Function<List<Message>, String> summarizer) {
+        llmSummarizer = summarizer;
+    }
+
     private ContextGuard() {}
 
     /**
@@ -97,8 +111,9 @@ public final class ContextGuard {
     }
 
     /**
-     * 将消息列表中最旧的一组完整往返（一条 assistant 及随后的 tool response）折叠成一条轻量摘要。
-     * 摘要保留工具名 + 截断的参数/输出 + assistant 思考，丢弃冗长原始内容。
+     * 将消息列表中最旧的一组完整往返（一条 assistant 及随后的 tool response）折叠成一条摘要。
+     * 摘要优先使用 LLM 语义压缩（开关开启时），失败或未开启时回退到零成本的轻量折叠
+     * （保留工具名 + 截断参数/结论 + 思考）。
      *
      * @return true 表示折叠成功并已替换进列表；false 表示无法折叠（调用方将直接丢弃）
      */
@@ -114,19 +129,45 @@ public final class ContextGuard {
         if (first.getText() != null && first.getText().startsWith(SUMMARY_PREFIX)) {
             return false;
         }
-        // 收集一组往返：一条 assistant（可能带 toolCalls）+ 随后的若干 tool responses
-        StringBuilder sb = new StringBuilder(SUMMARY_PREFIX);
-        appendMessageSummary(sb, first);
+        // 收集一组完整往返：一条 assistant（可能带 toolCalls）+ 随后的若干 tool responses
+        List<Message> roundTrip = new ArrayList<>();
+        roundTrip.add(first);
         int j = i + 1;
-        while (j < messages.size() && messages.get(j) instanceof ToolResponseMessage trm) {
-            appendMessageSummary(sb, trm);
+        while (j < messages.size() && messages.get(j) instanceof ToolResponseMessage) {
+            roundTrip.add(messages.get(j));
             j++;
+        }
+        // 生成摘要：优先 LLM 语义摘要（开关开启时），失败则回退轻量折叠
+        String summaryText = null;
+        var summarizer = llmSummarizer;
+        if (summarizer != null) {
+            try {
+                String s = summarizer.apply(roundTrip);
+                if (s != null && !s.isBlank()) {
+                    summaryText = SUMMARY_PREFIX + "\n" + truncate(s, MAX_SUMMARY_CHARS);
+                }
+            } catch (Exception ex) {
+                // 摘要调用失败（限流/超时等）：静默回退到轻量折叠
+                summaryText = null;
+            }
+        }
+        if (summaryText == null) {
+            summaryText = buildLightSummary(roundTrip);
         }
         // 用折叠摘要替换原区间 [i, j)
         List<Message> sub = messages.subList(i, j);
         sub.clear();
-        messages.add(i, new SystemMessage(sb.toString()));
+        messages.add(i, new SystemMessage(summaryText));
         return true;
+    }
+
+    /** 轻量折叠：保留工具名 + 截断的参数/结论 + 思考，零 LLM 调用 */
+    private static String buildLightSummary(List<Message> roundTrip) {
+        StringBuilder sb = new StringBuilder(SUMMARY_PREFIX);
+        for (Message m : roundTrip) {
+            appendMessageSummary(sb, m);
+        }
+        return sb.toString();
     }
 
     /** 把单条消息折叠成一行摘要 */

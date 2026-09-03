@@ -1,9 +1,11 @@
 package com.example.springharness.config;
 
+import com.example.springharness.rag.RagService;
 import com.example.springharness.tool.CalculatorTool;
 import com.example.springharness.tool.CodeExecutionTool;
 import com.example.springharness.tool.DateTimeTool;
 import com.example.springharness.tool.ExchangeRateTool;
+import com.example.springharness.tool.RagSearchTool;
 import com.example.springharness.tool.SkillRunTool;
 import com.example.springharness.tool.StockTool;
 import com.example.springharness.service.SkillService;
@@ -70,6 +72,14 @@ public class ToolConfig {
         return FunctionToolCallback.builder("skill_run", new SkillRunTool(skillService))
                 .description("加载指定技能的完整指令。当用户的需求匹配某个技能时，先调用此工具加载技能的详细步骤和规则，再按技能要求执行。参数为技能名称。")
                 .inputType(SkillRunTool.Request.class)
+                .build();
+    }
+
+    @Bean
+    public ToolCallback ragSearchTool(RagService ragService) {
+        return FunctionToolCallback.builder("search_knowledge", new RagSearchTool(ragService))
+                .description("知识库语义检索：基于已上传的知识库文档（PDF/TXT/MD）检索与问题最相关的文本片段。当用户问题涉及已上传文档的内容（如产品资料、项目文档、规章制度等）时，先调用此工具检索相关上下文，再基于检索结果回答；不要凭印象编造知识库内容。参数：query（检索问题/关键词）、topK（返回片段数，默认4，最大8）。")
+                .inputType(RagSearchTool.Request.class)
                 .build();
     }
 }

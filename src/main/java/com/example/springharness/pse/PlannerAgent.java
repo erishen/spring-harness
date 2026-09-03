@@ -156,7 +156,7 @@ public class PlannerAgent {
         for (PseTask task : tasks) {
             taskResults.append(String.format("### %s%n%s%n%n",
                     task.name(),
-                    task.executionResult() != null ? task.executionResult() : "未执行"));
+                    truncateResult(task.executionResult())));
         }
 
         String soul = soulService.getSoul("planner");
@@ -184,6 +184,17 @@ public class PlannerAgent {
     }
 
     // ==================== 私有方法 ====================
+
+    /** 截断过长的执行结果，避免最终交付输入过大 */
+    private String truncateResult(String result) {
+        if (result == null) return "未执行";
+        if (result.length() <= MAX_RESULT_CHARS) return result;
+        return result.substring(0, MAX_RESULT_CHARS)
+                + "\n...[执行结果过长，已截断 " + (result.length() - MAX_RESULT_CHARS) + " 字符]...";
+    }
+
+    /** 最终交付时单任务执行结果最大字符数 */
+    private static final int MAX_RESULT_CHARS = 6000;
 
     private Prompt buildPrompt(String systemPrompt, String userContent, String model) {
         List<org.springframework.ai.chat.messages.Message> messages = List.of(

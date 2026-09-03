@@ -78,7 +78,7 @@ public class EvaluatorAgent {
                 Specialist 执行结果：
                 %s
                 """, task.name(), ac,
-                task.executionResult() != null ? task.executionResult() : "(无执行结果)");
+                truncateResult(task.executionResult()));
 
         Prompt prompt = buildPrompt(systemPrompt, userContent, model);
         var response = multiModelService.getChatModel(model).call(prompt);
@@ -148,6 +148,17 @@ public class EvaluatorAgent {
     }
 
     // ==================== 私有方法 ====================
+
+    /** 截断过长的 Specialist 执行结果，避免评审输入过大 */
+    private String truncateResult(String result) {
+        if (result == null) return "(无执行结果)";
+        if (result.length() <= MAX_RESULT_CHARS) return result;
+        return result.substring(0, MAX_RESULT_CHARS)
+                + "\n...[执行结果过长，已截断 " + (result.length() - MAX_RESULT_CHARS) + " 字符]...";
+    }
+
+    /** 评审时单任务执行结果最大字符数 */
+    private static final int MAX_RESULT_CHARS = 6000;
 
     private Prompt buildPrompt(String systemPrompt, String userContent, String model) {
         List<org.springframework.ai.chat.messages.Message> messages = List.of(

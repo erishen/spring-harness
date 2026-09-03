@@ -330,12 +330,13 @@ onBeforeUnmount(() => {
   color: #9ca3af;
 }
 
-/* 卡片 */
+/* 卡片：禁止被 flex 压缩，内容超出时面板自然滚动 */
 .panel-card {
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 .card-header {
   display: flex;

@@ -755,7 +755,6 @@ header h1 { font-size: 16px; color: #1f2937; }
      ============================================================ -->
 <style>
 .sidebar .sessions,
-.runtime-panel,
 .longtask-panel .step-list,
 .longtask-panel .log-list,
 .longtask-panel .task-message-input,
@@ -764,7 +763,6 @@ header h1 { font-size: 16px; color: #1f2937; }
   -ms-overflow-style: none;
 }
 .sidebar .sessions::-webkit-scrollbar,
-.runtime-panel::-webkit-scrollbar,
 .longtask-panel .step-list::-webkit-scrollbar,
 .longtask-panel .log-list::-webkit-scrollbar,
 .longtask-panel .task-message-input::-webkit-scrollbar,
@@ -772,5 +770,28 @@ header h1 { font-size: 16px; color: #1f2937; }
   display: none;
   width: 0;
   height: 0;
+}
+
+/* 右侧 Runtime 面板：平时隐藏滚动条，hover/滚动时显示细滚动条，
+   让用户可感知面板可下拉查看更多工具/Skills（单一滚动条策略的例外） */
+.runtime-panel {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.runtime-panel::-webkit-scrollbar {
+  width: 6px;
+}
+.runtime-panel::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+.runtime-panel:hover,
+.runtime-panel:active {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+.runtime-panel:hover::-webkit-scrollbar-thumb,
+.runtime-panel:active::-webkit-scrollbar-thumb {
+  background: #d1d5db;
 }
 </style>

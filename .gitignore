@@ -1,0 +1,21 @@
+target/
+*.class
+*.log
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# 本地环境配置（含密钥，不提交）
+.env
+
+# 本地运行日志
+app.log
+
+# 前端
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# RAG 向量数据持久化（本地数据，不提交）
+data/

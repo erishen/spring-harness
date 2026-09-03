@@ -1,0 +1,560 @@
+<template>
+  <aside class="runtime-panel">
+    <div class="panel-header">
+      <span class="panel-icon">⚙️</span>
+      <span class="panel-title">Runtime</span>
+      <span class="panel-subtitle">{{ tools.length + skills.length }} 项能力</span>
+    </div>
+
+    <!-- 工具列表 -->
+    <div class="panel-card">
+      <div class="card-header" @click="toolsExpanded = !toolsExpanded">
+        <div class="card-title-group">
+          <span class="card-arrow" :class="{ expanded: toolsExpanded }">▶</span>
+          <span class="card-icon">🔧</span>
+          <span class="card-title">Tools</span>
+        </div>
+        <div class="card-stats">
+          <span class="stat-badge local">{{ localToolCount }} 本地</span>
+          <span class="stat-badge mcp">{{ mcpToolCount }} MCP</span>
+        </div>
+      </div>
+
+      <div class="card-body" v-show="toolsExpanded">
+        <!-- 本地工具 -->
+        <div class="tool-group" v-if="localTools.length">
+          <div class="group-label">
+            <span class="group-dot local"></span>
+            <span>本地工具</span>
+            <span class="group-count">{{ localTools.length }}</span>
+          </div>
+          <div class="tool-grid">
+            <div class="tool-chip" v-for="tool in localTools" :key="tool.name" :title="tool.description">
+              <span class="tool-chip-name">{{ tool.name }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- MCP 工具 -->
+        <div class="tool-group" v-if="mcpTools.length">
+          <div class="group-label">
+            <span class="group-dot mcp"></span>
+            <span>MCP 工具</span>
+            <span class="group-count">{{ mcpTools.length }}</span>
+          </div>
+          <div v-for="server in mcpServers" :key="server.name" class="mcp-server-block">
+            <div class="mcp-server-tag">
+              <span class="server-name">{{ server.name }}</span>
+              <span class="server-type">{{ server.type }}</span>
+            </div>
+            <div class="tool-grid">
+              <div class="tool-chip mcp" v-for="tool in server.tools" :key="tool.name" :title="tool.description">
+                <span class="tool-chip-name">{{ tool.name }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="empty-hint" v-if="!tools.length">加载中...</div>
+      </div>
+    </div>
+
+    <!-- Skills 技能列表 -->
+    <div class="panel-card" v-if="skillsEnabled">
+      <div class="card-header" @click="skillsExpanded = !skillsExpanded">
+        <div class="card-title-group">
+          <span class="card-arrow" :class="{ expanded: skillsExpanded }">▶</span>
+          <span class="card-icon">📚</span>
+          <span class="card-title">Skills</span>
+        </div>
+        <span class="count-badge">{{ skills.length }}</span>
+      </div>
+
+      <div class="card-body" v-show="skillsExpanded">
+        <div class="skill-list">
+          <div class="skill-item" v-for="skill in skills" :key="skill.name" :title="skill.description">
+            <div class="skill-icon">🎯</div>
+            <div class="skill-info">
+              <div class="skill-name">{{ skill.name }}</div>
+              <div class="skill-desc">{{ skill.description }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 服务状态 -->
+    <div class="panel-card">
+      <div class="card-header" @click="statusExpanded = !statusExpanded">
+        <div class="card-title-group">
+          <span class="card-arrow" :class="{ expanded: statusExpanded }">▶</span>
+          <span class="card-icon">📊</span>
+          <span class="card-title">服务状态</span>
+        </div>
+      </div>
+
+      <div class="card-body" v-show="statusExpanded">
+        <!-- MCP 状态 -->
+        <div class="status-row">
+          <div class="status-info">
+            <span class="status-icon">🔌</span>
+            <span class="status-name">MCP</span>
+          </div>
+          <div class="status-right">
+            <span class="status-badge" :class="mcpStatus.enabled ? 'on' : 'off'">
+              {{ mcpStatus.enabled ? '已启用' : '未启用' }}
+            </span>
+            <span class="status-count" v-if="mcpStatus.enabled">{{ mcpStatus.toolCount }} 工具</span>
+          </div>
+        </div>
+        <div class="server-list" v-if="mcpStatus.enabled && mcpStatus.servers?.length">
+          <div class="server-item" v-for="s in mcpStatus.servers" :key="s.name">
+            <span class="server-dot"></span>
+            <span class="server-item-name">{{ s.name }}</span>
+            <span class="server-item-type">{{ s.type }}</span>
+          </div>
+        </div>
+
+        <!-- 代码沙箱状态 -->
+        <div class="status-row">
+          <div class="status-info">
+            <span class="status-icon">🐳</span>
+            <span class="status-name">代码沙箱</span>
+          </div>
+          <div class="status-right">
+            <span class="status-badge" :class="sandboxStatus.enabled ? 'on' : 'off'">
+              {{ sandboxStatus.enabled ? '可用' : '不可用' }}
+            </span>
+          </div>
+        </div>
+        <div class="sandbox-detail" v-if="sandboxStatus.enabled">
+          <div class="detail-row">
+            <span class="detail-label">支持语言</span>
+            <span class="detail-value">{{ (sandboxStatus.supportedLanguages || []).join(', ') }}</span>
+          </div>
+          <div class="detail-row" v-if="sandboxStatus.config">
+            <span class="detail-label">资源限制</span>
+            <span class="detail-value">{{ sandboxStatus.config.memoryMb }}MB · {{ sandboxStatus.config.cpus }}核 · {{ sandboxStatus.config.timeoutSeconds }}s</span>
+          </div>
+        </div>
+        <div class="hint-text" v-if="!sandboxStatus.enabled">
+          启动 Docker（OrbStack）后自动可用
+        </div>
+      </div>
+    </div>
+  </aside>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue'
+
+// Runtime 面板
+const tools = ref([])
+const mcpStatus = ref({ enabled: false, toolCount: 0, servers: [] })
+const sandboxStatus = ref({ enabled: false, supportedLanguages: [], config: null })
+const skills = ref([])
+const skillsEnabled = ref(false)
+
+// 折叠状态
+const toolsExpanded = ref(false)
+const skillsExpanded = ref(false)
+const statusExpanded = ref(true)
+
+const localToolCount = computed(() => tools.value.filter(t => !t.fromMcp).length)
+const mcpToolCount = computed(() => tools.value.filter(t => t.fromMcp).length)
+const localTools = computed(() => tools.value.filter(t => !t.fromMcp))
+const mcpTools = computed(() => tools.value.filter(t => t.fromMcp))
+
+// 按服务器分组 MCP 工具
+const mcpServers = computed(() => {
+  const serverMap = {}
+  mcpTools.value.forEach(tool => {
+    const serverName = tool.mcpServer || 'unknown'
+    if (!serverMap[serverName]) {
+      const serverInfo = (mcpStatus.value.servers || []).find(s => s.name === serverName)
+      serverMap[serverName] = {
+        name: serverName,
+        type: serverInfo?.type || 'stdio',
+        description: serverInfo?.description || '',
+        tools: []
+      }
+    }
+    serverMap[serverName].tools.push(tool)
+  })
+  return Object.values(serverMap)
+})
+
+async function loadTools() {
+  try {
+    const res = await fetch('/api/tools')
+    if (res.ok) {
+      const data = await res.json()
+      tools.value = data.tools || []
+    }
+  } catch (e) {
+    console.error('加载工具列表失败', e)
+  }
+}
+
+async function loadMcpStatus() {
+  try {
+    const res = await fetch('/api/mcp/status')
+    if (res.ok) {
+      mcpStatus.value = await res.json()
+    }
+  } catch (e) {
+    console.error('加载 MCP 状态失败', e)
+  }
+}
+
+async function loadSandboxStatus() {
+  try {
+    const res = await fetch('/api/sandbox/status')
+    if (res.ok) {
+      sandboxStatus.value = await res.json()
+    }
+  } catch (e) {
+    console.error('加载沙箱状态失败', e)
+  }
+}
+
+async function loadSkills() {
+  try {
+    const res = await fetch('/api/skills')
+    if (res.ok) {
+      const data = await res.json()
+      skills.value = data.skills || []
+      skillsEnabled.value = data.enabled || false
+    }
+  } catch (e) {
+    console.error('加载技能列表失败', e)
+  }
+}
+
+onMounted(() => {
+  loadTools()
+  loadMcpStatus()
+  loadSandboxStatus()
+  loadSkills()
+})
+</script>
+
+<style scoped>
+.runtime-panel {
+  width: 240px;
+  min-width: 240px;
+  height: 100%;
+  background: #fafbfc;
+  border-left: 1px solid #e5e7eb;
+  padding: 12px 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 面板头部 */
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.panel-icon { font-size: 18px; }
+.panel-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+}
+.panel-subtitle {
+  margin-left: auto;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
+/* 卡片 */
+.panel-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+}
+.card-header:hover { background: #f9fafb; }
+.card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.card-arrow {
+  font-size: 9px;
+  color: #9ca3af;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.card-arrow.expanded { transform: rotate(90deg); }
+.card-icon { font-size: 14px; }
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+.card-stats {
+  display: flex;
+  gap: 4px;
+}
+.stat-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+.stat-badge.local { background: #eff6ff; color: #2563eb; }
+.stat-badge.mcp { background: #ecfdf5; color: #059669; }
+.count-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.card-body {
+  padding: 8px 12px 12px;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* 工具分组 */
+.tool-group { margin-bottom: 12px; }
+.tool-group:last-child { margin-bottom: 0; }
+.group-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.group-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+.group-dot.local { background: #3b82f6; }
+.group-dot.mcp { background: #10b981; }
+.group-count {
+  margin-left: auto;
+  font-size: 10px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* 工具网格 - chip 样式 */
+.tool-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.tool-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  background: #f3f4f6;
+  border-radius: 4px;
+  cursor: help;
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.tool-chip:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+.tool-chip.mcp { background: #ecfdf5; }
+.tool-chip.mcp:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+}
+.tool-chip-name {
+  font-size: 10px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* MCP 服务器块 */
+.mcp-server-block {
+  margin-bottom: 8px;
+}
+.mcp-server-block:last-child { margin-bottom: 0; }
+.mcp-server-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.server-name {
+  font-size: 10px;
+  font-weight: 600;
+  color: #059669;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+.server-type {
+  font-size: 9px;
+  color: #9ca3af;
+  background: #f3f4f6;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* Skills 列表 */
+.skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.skill-item {
+  display: flex;
+  gap: 8px;
+  padding: 8px;
+  background: #faf5ff;
+  border-radius: 6px;
+  border: 1px solid #ede9fe;
+  cursor: help;
+  transition: all 0.15s;
+}
+.skill-item:hover {
+  background: #f3e8ff;
+  border-color: #c4b5fd;
+}
+.skill-icon { font-size: 14px; flex-shrink: 0; }
+.skill-info { flex: 1; min-width: 0; }
+.skill-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #6d28d9;
+  font-family: 'SF Mono', Monaco, monospace;
+  margin-bottom: 2px;
+}
+.skill-desc {
+  font-size: 10px;
+  color: #7c3aed;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 服务状态 */
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.status-row:last-child { border-bottom: none; }
+.status-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-icon { font-size: 14px; }
+.status-name {
+  font-size: 12px;
+  font-weight: 500;
+  color: #374151;
+}
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.status-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+.status-badge.on { background: #dcfce7; color: #16a34a; }
+.status-badge.off { background: #fee2e2; color: #dc2626; }
+.status-count {
+  font-size: 10px;
+  color: #9ca3af;
+}
+
+/* 服务器列表 */
+.server-list {
+  padding: 6px 0 6px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.server-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+}
+.server-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #10b981;
+}
+.server-item-name {
+  color: #374151;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-weight: 500;
+}
+.server-item-type {
+  color: #9ca3af;
+  margin-left: auto;
+}
+
+/* 沙箱详情 */
+.sandbox-detail {
+  padding: 6px 0 6px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+.detail-label { color: #9ca3af; }
+.detail-value {
+  color: #374151;
+  font-weight: 500;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+
+.hint-text {
+  font-size: 10px;
+  color: #9ca3af;
+  padding: 6px 0 6px 22px;
+  font-style: italic;
+}
+.empty-hint {
+  font-size: 11px;
+  color: #9ca3af;
+  font-style: italic;
+  text-align: center;
+  padding: 12px 0;
+}
+</style>

@@ -1,0 +1,81 @@
+spring:
+  application:
+    name: spring-harness
+  servlet:
+    multipart:
+      # 文件上传大小限制（RAG 文档上传可能较大）
+      max-file-size: 50MB
+      max-request-size: 50MB
+  ai:
+    # 调小重试：本地 demo 建议快速失败，便于排查；
+    # 生产环境可按需调大（默认 10 次、初始退避 10s）
+    retry:
+      max-attempts: 1
+    dashscope:
+      # 阿里云百炼 API Key，在 https://bailian.console.aliyun.com/ 获取
+      # 推荐用环境变量：export DASHSCOPE_API_KEY=sk-xxx
+      api-key: ${DASHSCOPE_API_KEY:}
+      # 可选：业务空间 ID，不配置时使用主账号空间
+      # workspace-id: ${DASHSCOPE_WORKSPACE_ID:}
+      chat:
+        # 常用模型：qwen-turbo / qwen-plus / qwen-max / qwen3-coder-plus / glm-5.2 等
+        # 模型配置在 options.model 下（Spring AI 标准配置位置）
+        options:
+          model: ${DASHSCOPE_MODEL:qwen-plus}
+          temperature: 0.7
+          max-tokens: ${MAX_TOKENS:4096}
+      embedding:
+        # 文本向量模型，用于 RAG 文档向量化
+        # 模型配置在 options.model 下（Spring AI 标准配置位置）
+        # qwen3.7-text-embedding：100万Token免费，默认1024维，200+语种
+        options:
+          model: ${EMBEDDING_MODEL:qwen3.7-text-embedding}
+      rerank:
+        # 重排序模型：RAG 检索后对候选文档重排序，提升精度
+        # qwen3.7-text-rerank：有免费额度，支持500个文档，200+语种
+        options:
+          model: ${RERANK_MODEL:qwen3.7-text-rerank}
+    # MCP 客户端：连接外部 MCP 服务器，动态获取工具
+    # 启用后，MCP 工具会自动被 Planner/Specialist 使用，无需修改代码
+    mcp:
+      client:
+        # STDIO 传输：启动本地 MCP 服务器进程
+        stdio:
+          connections:
+            # 文件系统 MCP：允许 Agent 读取/写入指定目录的文件
+            # 需先全局安装：npm i -g @modelcontextprotocol/server-filesystem
+            filesystem:
+              command: /Users/erishen/.npm-global/bin/mcp-server-filesystem
+              args:
+                - "/Users/erishen/Workspace/CNB/individular-invest/work/spring/spring-harness"
+        # Streamable HTTP 传输：连接远程 MCP 服务器
+        # streamable-http:
+        #   connections:
+        #     weather-server:
+        #       url: http://localhost:8080
+
+# 自定义 MCP 开关（控制是否将 MCP 工具注入 Agent）
+mcp:
+  enabled: ${MCP_ENABLED:false}
+  # MCP 服务器列表（用于前端展示，需与 spring.ai.mcp.client 下的配置一致）
+  servers:
+    - name: filesystem
+      type: stdio
+      description: 文件系统操作（读取/写入/搜索文件）
+
+server:
+  port: ${SERVER_PORT:8080}
+
+# Docker 沙箱配置：代码执行工具的安全隔离环境
+sandbox:
+  docker:
+    # 是否启用 Docker 沙箱（设为 false 时代码执行工具返回错误）
+    enabled: ${SANDBOX_ENABLED:true}
+  # 代码执行默认超时时间（秒）
+  timeout-seconds: ${SANDBOX_TIMEOUT:30}
+  # 内存限制（MB）
+  memory-mb: ${SANDBOX_MEMORY_MB:512}
+  # CPU 限制（核数）
+  cpus: ${SANDBOX_CPUS:1}
+  # 输出大小限制（KB）
+  max-output-kb: ${SANDBOX_MAX_OUTPUT_KB:100}

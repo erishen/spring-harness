@@ -48,6 +48,22 @@ spring:
               command: /Users/erishen/.npm-global/bin/mcp-server-filesystem
               args:
                 - "/Users/erishen/Workspace/CNB/individular-invest/work/spring/spring-harness"
+            # 投资数据体检 MCP：weekly-investment 技能前置，刷新 asset-lens 快照并扫描异常（只读）
+            # 桥接 resolve-skills/weekly-investment-review 脚本 → autogen-pse / asset-lens 数据管线
+            portfolio-check:
+              command: node
+              args:
+                - "/Users/erishen/Workspace/CNB/individular-invest/work/harness/resolve-skills/skills/weekly-investment-review/scripts/portfolio-check.mjs"
+              env:
+                AUTOGEN_PSE_DIR: "${AUTOGEN_PSE_DIR:/Users/erishen/Workspace/CNB/individular-invest/frameworks/autogen-pse}"
+            # 深度投资周报 MCP：weekly-investment 技能核心，重算快照 + PSE 三角色流水线生成周报（2-6 分钟，默认 agnes 免费）
+            pse-review:
+              command: node
+              args:
+                - "/Users/erishen/Workspace/CNB/individular-invest/work/harness/resolve-skills/skills/weekly-investment-review/scripts/pse-review.mjs"
+              env:
+                AUTOGEN_PSE_DIR: "${AUTOGEN_PSE_DIR:/Users/erishen/Workspace/CNB/individular-invest/frameworks/autogen-pse}"
+                PSE_REVIEW_PROVIDER: "${PSE_REVIEW_PROVIDER:agnes}"
         # Streamable HTTP 传输：连接远程 MCP 服务器
         # streamable-http:
         #   connections:
@@ -62,6 +78,12 @@ mcp:
     - name: filesystem
       type: stdio
       description: 文件系统操作（读取/写入/搜索文件）
+    - name: portfolio-check
+      type: stdio
+      description: 投资数据体检（刷新 asset-lens 快照 + 扫描异常，只读）
+    - name: pse-review
+      type: stdio
+      description: 深度投资周报（PSE 三角色流水线 + 个人知识库检索）
 
 server:
   port: ${SERVER_PORT:8080}

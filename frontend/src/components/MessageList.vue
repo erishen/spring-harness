@@ -642,19 +642,15 @@ defineExpose({
   text-decoration: underline;
 }
 
-/* 消息操作栏 */
+/* 消息操作栏：默认隐藏，hover 消息或点击复制后显示（用 display 硬控，避免 opacity 被覆盖） */
 .msg-actions {
-  display: flex;
+  display: none;
   gap: 8px;
   margin-top: 6px;
-  opacity: 0;
-  transition: opacity 0.2s;
 }
-.msg:hover .msg-actions {
-  opacity: 1;
-}
+.msg:hover .msg-actions,
 .msg-actions.visible {
-  opacity: 1;
+  display: flex;
 }
 .msg-action-btn {
   font-size: 11px;

@@ -28,9 +28,9 @@
       <div class="mode-row">
         <div class="mode-buttons">
           <button :class="{ active: mode === 'chat' }" @click="mode = 'chat'">普通对话</button>
+          <button :class="{ active: mode === 'rag' }" @click="mode = 'rag'">RAG 知识库</button>
           <button :class="{ active: mode === 'agent' }" @click="mode = 'agent'">ReAct Agent</button>
           <button :class="{ active: mode === 'pse' }" @click="mode = 'pse'">PSE 协作</button>
-          <button :class="{ active: mode === 'rag' }" @click="mode = 'rag'">RAG 知识库</button>
           <button :class="{ active: mode === 'task' }" @click="mode = 'task'">长时任务</button>
         </div>
         <select v-model="selectedModel" class="model-select" title="选择模型">

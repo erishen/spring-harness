@@ -174,10 +174,21 @@ const copiedIndex = ref(-1)
 
 // ==================== 代码块复制按钮 ====================
 
-/** 给所有代码块添加语言标签 + 复制按钮 */
+/** 给 AI 正文（最终回答）里的代码块添加语言标签 + 复制按钮。
+ *  注意：只处理 .bubble.md-content 内的 pre，避免误伤工具卡片的入参/结果
+ *  （.section-content pre）、ReAct 思考区、PSE 步骤内容等过程信息。 */
 function addCopyButtons() {
   nextTick(() => {
-    const pres = chatContainer.value?.querySelectorAll('pre')
+    const root = chatContainer.value
+    if (!root) return
+    // 清理历史误加：还原不在 AI 正文里的代码块包装（如工具卡片入参/结果、思考区等）
+    root.querySelectorAll('.code-block-wrapper').forEach(w => {
+      if (!w.closest('.bubble.md-content')) {
+        const pre = w.querySelector('pre')
+        if (pre) w.replaceWith(pre)
+      }
+    })
+    const pres = root.querySelectorAll('.bubble.md-content pre')
     if (!pres) return
     pres.forEach((pre, idx) => {
       // 避免重复添加

@@ -1,5 +1,6 @@
 package com.example.springharness.config;
 
+import com.alibaba.cloud.ai.model.RerankModel;
 import com.example.springharness.rag.RagService;
 import com.example.springharness.tool.CalculatorTool;
 import com.example.springharness.tool.CodeExecutionTool;
@@ -76,9 +77,9 @@ public class ToolConfig {
     }
 
     @Bean
-    public ToolCallback ragSearchTool(RagService ragService) {
-        return FunctionToolCallback.builder("search_knowledge", new RagSearchTool(ragService))
-                .description("知识库语义检索：基于已上传的知识库文档（PDF/TXT/MD）检索与问题最相关的文本片段。当用户问题涉及已上传文档的内容（如产品资料、项目文档、规章制度等）时，先调用此工具检索相关上下文，再基于检索结果回答；不要凭印象编造知识库内容。参数：query（检索问题/关键词）、topK（返回片段数，默认4，最大8）。")
+    public ToolCallback ragSearchTool(RagService ragService, RerankModel rerankModel) {
+        return FunctionToolCallback.builder("search_knowledge", new RagSearchTool(ragService, rerankModel))
+                .description("知识库语义检索（Rerank 精排）：基于已上传的知识库文档（PDF/TXT/MD）检索并精排与问题最相关的文本片段。当用户问题涉及已上传文档的内容（如产品资料、项目文档、规章制度等）时，先调用此工具检索相关上下文，再基于检索结果回答；不要凭印象编造知识库内容。参数：query（检索问题/关键词）、topK（返回片段数，默认4，最大8）。")
                 .inputType(RagSearchTool.Request.class)
                 .build();
     }

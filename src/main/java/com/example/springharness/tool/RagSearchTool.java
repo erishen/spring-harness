@@ -1,30 +1,45 @@
 package com.example.springharness.tool;
 
+import com.alibaba.cloud.ai.model.RerankModel;
+import com.alibaba.cloud.ai.model.RerankRequest;
 import com.example.springharness.rag.RagService;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 
 import java.util.List;
 import java.util.function.Function;
 
 /**
- * 知识库语义检索工具：基于已上传文档（RAG 向量库）检索与问题最相关的文本片段。
+ * 知识库语义检索工具（Rerank 增强版）：基于已上传文档检索 → Rerank 精排 → 返回最相关片段。
  *
- * 供 ReAct Agent / PSE Specialist / 长时任务共用：
- * 注册进 ToolConfig 后，工具描述会随 ToolDescriptionService 动态注入各模式的 prompt，
- * 模型可在合适时机自主决定是否检索知识库。
+ * 流程：
+ * 1. 向量检索候选片段（topK=10，保证召回）
+ * 2. RerankModel（qwen3.7-text-rerank）对候选精排
+ * 3. 取精排后的 topN 返回（含相关性分数）
+ * 4. Rerank 失败时自动回退纯向量检索，保证工具始终可用
+ *
+ * 供 ReAct Agent / PSE Specialist / 长时任务共用。
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonClassDescription("知识库语义检索：基于已上传的知识库文档检索与问题最相关的文本片段")
+@JsonClassDescription("知识库语义检索（Rerank 精排）：基于已上传的知识库文档检索并精排与问题最相关的文本片段")
 public class RagSearchTool implements Function<RagSearchTool.Request, RagSearchTool.Response> {
 
-    private final RagService ragService;
+    private static final Logger log = LoggerFactory.getLogger(RagSearchTool.class);
 
-    public RagSearchTool(RagService ragService) {
+    /** 向量检索候选数（召回），再交给 Rerank 精排 */
+    private static final int CANDIDATE_K = 10;
+
+    private final RagService ragService;
+    private final RerankModel rerankModel;
+
+    public RagSearchTool(RagService ragService, RerankModel rerankModel) {
         this.ragService = ragService;
+        this.rerankModel = rerankModel;
     }
 
     public record Request(
@@ -36,29 +51,58 @@ public class RagSearchTool implements Function<RagSearchTool.Request, RagSearchT
             Integer topK
     ) {}
 
-    public record Fragment(String content, String source, String docId) {}
+    public record Fragment(String content, String source, String docId, Double score) {}
 
-    public record Response(List<Fragment> fragments, int total) {}
+    public record Response(List<Fragment> fragments, int total, String rankMethod) {}
 
     @Override
     public Response apply(Request request) {
         long start = System.currentTimeMillis();
         String query = request.query() != null ? request.query().trim() : "";
         if (query.isBlank()) {
-            return new Response(List.of(), 0);
+            return new Response(List.of(), 0, "rerank");
         }
-        int topK = request.topK() != null ? Math.min(Math.max(request.topK(), 1), 8) : 4;
+        int topN = request.topK() != null ? Math.min(Math.max(request.topK(), 1), 8) : 4;
 
-        List<Document> docs = ragService.search(query, topK);
-        List<Fragment> fragments = docs.stream()
-                .map(d -> new Fragment(
-                        d.getText(),
-                        String.valueOf(d.getMetadata().getOrDefault("source", "")),
-                        String.valueOf(d.getMetadata().getOrDefault("docId", ""))
-                ))
-                .toList();
+        List<Document> candidates = ragService.search(query, CANDIDATE_K);
+        List<Fragment> fragments;
+        String rankMethod = "rerank";
 
-        Response response = new Response(fragments, fragments.size());
+        if (candidates.isEmpty()) {
+            fragments = List.of();
+        } else {
+            try {
+                // Rerank 精排：对候选片段重新排序，返回精排后的 topN
+                var rerankResponse = rerankModel.call(new RerankRequest(query, candidates));
+                fragments = rerankResponse.getResults().stream()
+                        .limit(topN)
+                        .map(dws -> {
+                            Document d = dws.getOutput();
+                            return new Fragment(
+                                    d.getText(),
+                                    String.valueOf(d.getMetadata().getOrDefault("source", "")),
+                                    String.valueOf(d.getMetadata().getOrDefault("docId", "")),
+                                    dws.getScore()
+                            );
+                        })
+                        .toList();
+            } catch (Exception e) {
+                // Rerank 失败时回退纯向量检索，保证工具可用
+                log.warn("Rerank 精排失败，回退纯向量检索: {}", e.getMessage());
+                rankMethod = "vector-fallback";
+                fragments = candidates.stream()
+                        .limit(topN)
+                        .map(d -> new Fragment(
+                                d.getText(),
+                                String.valueOf(d.getMetadata().getOrDefault("source", "")),
+                                String.valueOf(d.getMetadata().getOrDefault("docId", "")),
+                                null
+                        ))
+                        .toList();
+            }
+        }
+
+        Response response = new Response(fragments, fragments.size(), rankMethod);
         ToolCallRecorder.record("search_knowledge", request, response.toString(), System.currentTimeMillis() - start);
         return response;
     }

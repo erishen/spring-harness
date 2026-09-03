@@ -152,6 +152,8 @@ public class SpecialistAgent {
         if (finalResult.isBlank()) {
             finalResult = "(达到最大循环次数，任务可能未完成)";
         }
+        // 清理最终输出中混入的文本形式工具调用标记（如 <tool_call>...</tool_call>）
+        finalResult = ContextGuard.stripToolCallMarkers(finalResult);
 
         return new ExecutionResult(finalResult, toolCallInfos);
     }

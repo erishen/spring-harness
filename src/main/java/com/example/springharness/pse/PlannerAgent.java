@@ -180,7 +180,9 @@ public class PlannerAgent {
         Prompt prompt = buildPrompt(systemPrompt, userContent, model);
         var response = multiModelService.getChatModel(model).call(prompt);
         TokenUsageTracker.current(tokenUsageTracker).record(response);
-        return response.getResult().getOutput().getText();
+        // 清理最终交付中混入的文本形式工具调用标记
+        return com.example.springharness.util.ContextGuard.stripToolCallMarkers(
+                response.getResult().getOutput().getText());
     }
 
     // ==================== 私有方法 ====================

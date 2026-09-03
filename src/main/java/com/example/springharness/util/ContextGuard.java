@@ -90,6 +90,61 @@ public final class ContextGuard {
         trimMessages(messages, MAX_HISTORY_CHARS);
     }
 
+    // ==================== 最终输出清理 ====================
+
+    /** 完整的 tool_call / tool_calls 块（跨行，含单复数） */
+    private static final java.util.regex.Pattern TOOL_CALL_BLOCK = java.util.regex.Pattern.compile(
+            "(?is)<\\s*tool_calls?\\b.*?<\\s*/?\\s*tool_calls?\\s*>");
+
+    /** invoke 块（Anthropic/OpenAI 风格文本模拟，tool 或 name 参数，含或省略尖括号） */
+    private static final java.util.regex.Pattern INVOKE_BLOCK = java.util.regex.Pattern.compile(
+            "(?is)<?\\s*invoke\\s+(?:tool|name)\\s*=\\s*\\\"[^\\\"]*\\\"[^>]*>?.*?<\\s*/?\\s*invoke\\s*>");
+
+    /** function_call 块 */
+    private static final java.util.regex.Pattern FUNCTION_CALL_BLOCK = java.util.regex.Pattern.compile(
+            "(?is)<\\s*function_call\\b.*?<\\s*/?\\s*function_call\\s*>");
+
+    /** tool_use 块 */
+    private static final java.util.regex.Pattern TOOL_USE_BLOCK = java.util.regex.Pattern.compile(
+            "(?is)<\\s*tool_use\\b.*?<\\s*/?\\s*tool_use\\s*>");
+
+    /** Qwen 风格工具调用段 begin/end 之间的完整块 */
+    private static final java.util.regex.Pattern QWEN_CALLS_SECTION = java.util.regex.Pattern.compile(
+            "(?is)<\\|tool_calls_section_begin\\|>.*?<\\|tool_calls_section_end\\|>");
+
+    /** Qwen 风格孤立标记：tool_call_begin / tool_call_argument_begin / tool_end 等 */
+    private static final java.util.regex.Pattern QWEN_TOOL_TAG = java.util.regex.Pattern.compile(
+            "(?i)<\\|tool_(?:call_begin|call_argument_begin|end|calls_section_begin|calls_section_end)\\|>");
+
+    /** 独立参数行：param name="..." 或 parameter name="..." */
+    private static final java.util.regex.Pattern PARAM_LINE = java.util.regex.Pattern.compile(
+            "(?im)^\\s*(?:<)?\\s*param(?:eter)?\\s+name\\s*=\\s*\\\"[^\\\"]*\\\"[^>]*>?.*$");
+
+    /** 孤立标签：tool_call/tool_calls / function / parameter / param / invoke */
+    private static final java.util.regex.Pattern LONE_TAG = java.util.regex.Pattern.compile(
+            "(?i)<\\s*/?\\s*(?:tool_calls?|function|parameter|param|invoke)\\s*>");
+
+    /**
+     * 清理 LLM 最终输出中混入的文本形式工具调用标记。
+     * 部分模型在 tool calling 模式下会用文本模拟工具调用（tool_call(s) / invoke / function_call / tool_use / Qwen 等风格），
+     * 这些是内部指令，不应展示给用户。
+     */
+    public static String stripToolCallMarkers(String text) {
+        if (text == null) return "";
+        String out = text;
+        out = TOOL_CALL_BLOCK.matcher(out).replaceAll("");
+        out = INVOKE_BLOCK.matcher(out).replaceAll("");
+        out = FUNCTION_CALL_BLOCK.matcher(out).replaceAll("");
+        out = TOOL_USE_BLOCK.matcher(out).replaceAll("");
+        out = QWEN_CALLS_SECTION.matcher(out).replaceAll("");
+        out = QWEN_TOOL_TAG.matcher(out).replaceAll("");
+        out = PARAM_LINE.matcher(out).replaceAll("");
+        out = LONE_TAG.matcher(out).replaceAll("");
+        // 清理因移除标记产生的多余空行
+        out = out.replaceAll("(?m)^\\s*\\n", "");
+        return out.trim();
+    }
+
     private static int safeLen(String s) {
         return s == null ? 0 : s.length();
     }

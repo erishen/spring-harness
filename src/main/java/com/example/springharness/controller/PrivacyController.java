@@ -1,6 +1,7 @@
 package com.example.springharness.controller;
 
 import com.example.springharness.memory.MemoryStore;
+import com.example.springharness.rag.DocumentInfo;
 import com.example.springharness.rag.RagService;
 import com.example.springharness.task.LongTaskStore;
 import org.slf4j.Logger;
@@ -78,7 +79,7 @@ public class PrivacyController {
         Map<String, Object> ragStats = new LinkedHashMap<>();
         var docs = ragService.listDocuments();
         ragStats.put("documents", docs.size());
-        ragStats.put("totalChunks", docs.stream().mapToInt(d -> d.chunkCount() != null ? d.chunkCount() : 0).sum());
+        ragStats.put("totalChunks", docs.stream().mapToInt(DocumentInfo::chunkCount).sum());
         result.put("rag", ragStats);
 
         // 导出时间

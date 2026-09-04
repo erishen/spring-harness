@@ -15,8 +15,8 @@
     <div class="main-content-wrapper">
     <header>
       <div class="logo">AI</div>
-      <h1>Spring AI Alibaba 聊天演示</h1>
-      <span class="model">DashScope · Vue 3</span>
+      <h1>Spring Harness</h1>
+      <span class="model">AI Agent 框架 · Spring AI + Vue 3</span>
       <div class="header-actions">
         <button class="header-btn" @click="exportChat" title="导出聊天记录为 Markdown">导出</button>
         <button class="header-btn danger" @click="clearChat" title="清空当前会话">清空</button>

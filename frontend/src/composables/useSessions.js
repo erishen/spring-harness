@@ -16,7 +16,7 @@ function generateId() {
 function defaultMessages() {
   return [{
     role: 'ai',
-    content: '你好！我是基于 Spring AI Alibaba 的聊天助手。\n\n可切换模式：\n• 普通对话：流式输出 + 多轮上下文\n• Agent 模式：自动调用工具（计算器、时间、股票）\n• PSE 协作：Planner-Specialist-Evaluator 三角色协作\n• RAG 知识库：上传文档后基于内容问答'
+    content: '你好！我是 **Spring Harness** 的 AI 助手。\n\n可切换模式：\n• 普通对话：流式输出 + 多轮上下文\n• RAG 知识库：上传文档后基于内容问答\n• ReAct Agent：自动识别意图调用工具\n• PSE 协作：Planner-Specialist-Evaluator 三角色协作\n• 长时任务：后台执行、可追踪 token 消耗'
   }]
 }
 

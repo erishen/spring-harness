@@ -128,7 +128,7 @@ defineExpose({
 
 /* 示例问题栏 */
 .examples-bar {
-  max-width: 860px;
+  max-width: 1200px;
   margin: 0 auto 10px;
   display: flex;
   align-items: flex-start;
@@ -175,7 +175,7 @@ defineExpose({
   display: flex;
   gap: 10px;
   align-items: flex-end;
-  max-width: 860px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 .input-area textarea {
@@ -245,7 +245,7 @@ defineExpose({
 }
 
 .hint {
-  max-width: 860px;
+  max-width: 1200px;
   margin: 8px auto 0;
   font-size: 11px;
   color: #9ca3af;

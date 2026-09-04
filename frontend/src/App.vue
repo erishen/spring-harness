@@ -681,7 +681,7 @@ header h1 { font-size: 16px; color: #1f2937; }
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-width: 860px;
+  max-width: 1200px;
   width: 100%;
   margin: 0 auto;
 }

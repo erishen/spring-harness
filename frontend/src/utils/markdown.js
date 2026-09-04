@@ -123,15 +123,15 @@ export function enhanceCodeBlocks(container) {
 
     const copyBtn = document.createElement('button')
     copyBtn.className = 'code-copy-btn'
-    copyBtn.textContent = '复制'
+    copyBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><span>复制</span>'
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation()
       const text = pre.innerText
       const done = () => {
-        copyBtn.textContent = '✓ 已复制'
+        copyBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg><span>已复制</span>'
         copyBtn.classList.add('copied')
         setTimeout(() => {
-          copyBtn.textContent = '复制'
+          copyBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg><span>复制</span>'
           copyBtn.classList.remove('copied')
         }, 1500)
       }

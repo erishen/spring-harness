@@ -858,6 +858,81 @@ header h1 { font-size: 16px; color: #1f2937; }
   background: #d1d5db;
 }
 
+/* ============================================================
+   代码块包装器样式（全局，enhanceCodeBlocks 生成）
+   ============================================================ */
+.code-block-wrapper {
+  position: relative;
+  margin: 10px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1e293b;
+  border: 1px solid #334155;
+}
+.code-block-wrapper pre {
+  margin: 0 !important;
+  padding: 14px 16px !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #e2e8f0;
+  font-family: 'SF Mono', 'Fira Code', Monaco, 'Cascadia Code', monospace;
+}
+.code-block-wrapper pre code {
+  background: transparent !important;
+  padding: 0 !important;
+  color: inherit !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+}
+.code-block-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 14px;
+  background: #0f172a;
+  border-bottom: 1px solid #334155;
+  min-height: 32px;
+}
+.code-block-lang {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+.code-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #94a3b8;
+  background: transparent;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+.code-copy-btn:hover {
+  color: #e2e8f0;
+  background: #334155;
+  border-color: #64748b;
+}
+.code-copy-btn.copied {
+  color: #4ade80;
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.1);
+}
+.code-copy-btn:active {
+  transform: scale(0.97);
+}
+
 /* 隐私管理浮层 */
 .modal-overlay {
   position: fixed;

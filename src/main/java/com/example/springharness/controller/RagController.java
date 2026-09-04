@@ -65,6 +65,18 @@ public class RagController {
     }
 
     /**
+     * 预览文档内容（按块顺序拼接，用于在线查看）。
+     */
+    @GetMapping("/documents/{docId}/content")
+    public ResponseEntity<Map<String, Object>> getDocumentContent(@PathVariable String docId) {
+        String content = ragService.getDocumentContent(docId);
+        if (content == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(Map.of("docId", docId, "content", content));
+    }
+
+    /**
      * 文档统计信息。
      */
     @GetMapping("/stats")

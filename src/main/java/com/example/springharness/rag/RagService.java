@@ -54,8 +54,14 @@ public class RagService {
     @Value("${rag.document-registry-file:data/document-registry.json}")
     private String documentRegistryFile;
 
+    @Value("${rag.document-content-file:data/document-contents.json}")
+    private String documentContentFile;
+
     /** 文档元信息存储：docId -> DocumentInfo */
     private final Map<String, DocumentInfo> documentRegistry = new ConcurrentHashMap<>();
+
+    /** 文档内容存储：docId -> 块文本列表（用于预览） */
+    private final Map<String, List<String>> documentContents = new ConcurrentHashMap<>();
 
     private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
@@ -70,10 +76,11 @@ public class RagService {
     }
 
     /**
-     * 启动时加载文档元信息（向量数据由 RagConfig 在 Bean 创建时加载）。
+     * 启动时加载文档元信息和内容（向量数据由 RagConfig 在 Bean 创建时加载）。
      */
     @PostConstruct
     public void loadRegistry() {
+        // 加载文档元信息
         File file = new File(documentRegistryFile);
         if (file.exists() && file.length() > 0) {
             try {
@@ -84,6 +91,19 @@ public class RagService {
                 log.info("文档元信息已从文件加载: {} ({} 个文档)", documentRegistryFile, list.size());
             } catch (Exception e) {
                 log.warn("文档元信息文件加载失败: {}", e.getMessage());
+            }
+        }
+
+        // 加载文档内容（用于预览）
+        File contentFile = new File(documentContentFile);
+        if (contentFile.exists() && contentFile.length() > 0) {
+            try {
+                Map<String, List<String>> contents = objectMapper.readValue(contentFile,
+                        new TypeReference<Map<String, List<String>>>() {});
+                documentContents.putAll(contents);
+                log.info("文档内容已从文件加载: {} ({} 个文档)", documentContentFile, contents.size());
+            } catch (Exception e) {
+                log.warn("文档内容文件加载失败: {}", e.getMessage());
             }
         }
     }
@@ -123,6 +143,10 @@ public class RagService {
         // 记录 chunk id 列表（用于后续删除）
         List<String> chunkIds = chunks.stream().map(Document::getId).toList();
 
+        // 保存文档内容（用于预览）
+        List<String> chunkTexts = chunks.stream().map(Document::getText).toList();
+        documentContents.put(docId, chunkTexts);
+
         DocumentInfo info = new DocumentInfo(
                 docId,
                 originalFileName,
@@ -147,6 +171,17 @@ public class RagService {
     }
 
     /**
+     * 获取文档内容（用于预览），按块顺序拼接。
+     */
+    public String getDocumentContent(String docId) {
+        List<String> chunks = documentContents.get(docId);
+        if (chunks == null || chunks.isEmpty()) {
+            return null;
+        }
+        return String.join("\n\n---\n\n", chunks);
+    }
+
+    /**
      * 删除文档及其所有向量块。
      */
     public boolean deleteDocument(String docId) {
@@ -158,6 +193,9 @@ public class RagService {
         if (info.chunkIds() != null && !info.chunkIds().isEmpty()) {
             vectorStore.delete(info.chunkIds());
         }
+
+        // 删除文档内容
+        documentContents.remove(docId);
 
         // 实时持久化
         persist();
@@ -201,7 +239,8 @@ public class RagService {
             // 确保目录存在
             File vecFile = new File(vectorStoreFile);
             File regFile = new File(documentRegistryFile);
-            for (File f : List.of(vecFile, regFile)) {
+            File contentFile = new File(documentContentFile);
+            for (File f : List.of(vecFile, regFile, contentFile)) {
                 File parent = f.getParentFile();
                 if (parent != null && !parent.exists()) {
                     parent.mkdirs();
@@ -216,6 +255,10 @@ public class RagService {
             // 保存文档元信息
             objectMapper.writerWithDefaultPrettyPrinter()
                     .writeValue(regFile, new ArrayList<>(documentRegistry.values()));
+
+            // 保存文档内容（用于预览）
+            objectMapper.writerWithDefaultPrettyPrinter()
+                    .writeValue(contentFile, documentContents);
 
             log.debug("RAG 数据已持久化: {} 个文档, {} 个向量块",
                     documentRegistry.size(),

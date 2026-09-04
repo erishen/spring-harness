@@ -39,7 +39,7 @@
     </CollapsibleCard>
 
     <!-- Knowledge (最近知识库检索) -->
-    <CollapsibleCard v-if="hasRagTool" title="Knowledge" subtitle="最近知识库检索" icon="📚" :default-expanded="true">
+    <CollapsibleCard v-if="hasRagTool" title="Knowledge" subtitle="最近知识库检索" icon="📚">
       <div v-if="trace && trace.exists" class="rag-trace-body">
         <div class="rag-trace-query">🔍 {{ trace.trace.query }}</div>
         <div class="rag-trace-flow">
@@ -104,7 +104,7 @@
     </CollapsibleCard>
 
     <!-- Service (MCP + 沙箱状态) -->
-    <CollapsibleCard title="Service" subtitle="MCP · 代码沙箱" icon="🛡️" :default-expanded="true">
+    <CollapsibleCard title="Service" subtitle="MCP · 代码沙箱" icon="🛡️">
       <!-- MCP 状态 -->
       <div class="status-row">
         <div class="status-info">

@@ -24,7 +24,7 @@ public class SkillRunTool implements Function<SkillRunTool.Request, SkillRunTool
 
     public record Request(
             @JsonProperty(required = true, value = "skill_name")
-            @JsonPropertyDescription("技能名称，如 code-review、weekly-investment-review")
+            @JsonPropertyDescription("技能名称，如 code-review、weekly-investment")
             String skillName
     ) {}
 

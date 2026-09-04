@@ -298,13 +298,13 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .runtime-panel {
-  width: 270px;
-  min-width: 270px;
+  width: 250px;
+  min-width: 250px;
   flex-shrink: 0;
   height: 100%;
   background: #fafbfc;
   border-left: 1px solid #e5e7eb;
-  padding: 14px 12px;
+  padding: 12px 10px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -340,21 +340,17 @@ onBeforeUnmount(() => {
 .group-count { margin-left: auto; font-size: 10px; color: #9ca3af; font-weight: 500; }
 
 /* 工具网格 */
-.tool-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
+.tool-grid { display: flex; flex-wrap: wrap; gap: 4px; }
 .tool-chip {
-  display: inline-flex; align-items: center; padding: 5px 12px;
-  background: #f3f4f6; border-radius: 6px; cursor: help;
+  display: inline-flex; align-items: center; padding: 3px 8px;
+  background: #f3f4f6; border-radius: 4px; cursor: help;
   transition: all 0.15s; border: 1px solid transparent;
 }
 .tool-chip:hover { background: #eff6ff; border-color: #bfdbfe; }
 .tool-chip.mcp { background: #ecfdf5; }
 .tool-chip.mcp:hover { background: #d1fae5; border-color: #6ee7b7; }
 .tool-chip-name {
-  font-size: 12px; font-family: 'SF Mono', Monaco, monospace;
+  font-size: 10px; font-family: 'SF Mono', Monaco, monospace;
   color: #374151; font-weight: 500;
 }
 
@@ -381,12 +377,12 @@ onBeforeUnmount(() => {
 .rag-trace-empty { font-size: 10px; color: #9ca3af; font-style: italic; padding: 2px 0; }
 
 /* Skills */
-.skill-list { display: flex; flex-direction: column; gap: 8px; }
-.skill-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 7px 9px; }
-.skill-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.skill-name { font-size: 12px; font-weight: 600; color: #1e40af; font-family: 'SF Mono', Monaco, monospace; }
-.skill-trigger { font-size: 10px; color: #9ca3af; background: #f3f4f6; padding: 1px 5px; border-radius: 3px; }
-.skill-desc { font-size: 11px; color: #6b7280; margin-top: 3px; line-height: 1.5; }
+.skill-list { display: flex; flex-direction: column; gap: 6px; }
+.skill-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px; }
+.skill-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.skill-name { font-size: 11px; font-weight: 600; color: #1e40af; font-family: 'SF Mono', Monaco, monospace; }
+.skill-trigger { font-size: 9px; color: #9ca3af; background: #f3f4f6; padding: 1px 4px; border-radius: 3px; }
+.skill-desc { font-size: 10px; color: #6b7280; margin-top: 2px; line-height: 1.4; }
 
 /* Memory */
 .mem-toggle { display: inline-flex; align-items: center; cursor: pointer; }
@@ -402,16 +398,16 @@ onBeforeUnmount(() => {
 }
 .toggle-slider.on { background: #3b82f6; }
 .toggle-slider.on::after { left: 16px; }
-.memory-list { display: flex; flex-direction: column; gap: 8px; }
-.memory-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 7px; padding: 7px 9px; }
-.memory-item-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-.memory-cat { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px; background: #eff6ff; color: #2563eb; }
+.memory-list { display: flex; flex-direction: column; gap: 6px; }
+.memory-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px; }
+.memory-item-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
+.memory-cat { font-size: 9px; font-weight: 600; padding: 1px 5px; border-radius: 3px; background: #eff6ff; color: #2563eb; }
 .memory-cat.preference { background: #fdf4ff; color: #a21caf; }
 .memory-cat.goal { background: #f0fdf4; color: #15803d; }
-.memory-del { font-size: 11px; color: #9ca3af; background: none; border: none; cursor: pointer; padding: 0 2px; }
+.memory-del { font-size: 10px; color: #9ca3af; background: none; border: none; cursor: pointer; padding: 0 2px; }
 .memory-del:hover { color: #ef4444; }
-.memory-content { font-size: 11.5px; color: #374151; margin-top: 3px; line-height: 1.5; word-break: break-all; }
-.memory-empty { font-size: 11px; color: #9ca3af; padding: 4px 0; line-height: 1.5; }
+.memory-content { font-size: 10.5px; color: #374151; margin-top: 2px; line-height: 1.4; word-break: break-all; }
+.memory-empty { font-size: 10px; color: #9ca3af; padding: 4px 0; line-height: 1.5; }
 .memory-more { font-size: 9px; color: #9ca3af; text-align: center; padding: 4px 0; }
 .memory-actions { margin-top: 6px; text-align: center; }
 .mem-clear-btn { font-size: 10px; padding: 3px 10px; border: 1px solid #fecaca; border-radius: 4px; background: #fff; color: #ef4444; cursor: pointer; }

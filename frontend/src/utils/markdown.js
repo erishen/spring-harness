@@ -106,8 +106,11 @@ export function enhanceCodeBlocks(container) {
   container.querySelectorAll('pre').forEach((pre) => {
     // 避免重复包装
     if (pre.parentElement?.classList.contains('code-block-wrapper')) return
-
+    // 只包装包含 <code> 子元素的真正代码块（Markdown 渲染的代码块结构是 <pre><code>...</code></pre>）
+    // 跳过步骤内容、日志等普通 <pre> 元素（没有 <code> 子元素）
     const code = pre.querySelector('code')
+    if (!code) return
+
     const langMatch = code?.className?.match(/language-([\w+-]+)/)
     const lang = langMatch ? langMatch[1] : ''
 

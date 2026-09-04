@@ -504,7 +504,7 @@ public class ExampleController {
             case "rust" -> "用 Rust 计算斐波那契第 25 项";
             case "c" -> "用 C 列出 1 到 100 的素数";
             case "cpp" -> "用 C++ 反转并排序一个数组";
-            case "shell" -> "用 Shell 统计当前目录文件数量与总大小";
+            case "shell" -> "用 Shell 查看系统信息（uname、CPU核数、内存）并汇总";
             default -> null;
         };
     }
@@ -519,7 +519,7 @@ public class ExampleController {
             case "c" -> "用 C 计算 100000 以内所有质数并统计数量";
             case "cpp" -> "用 C++ 对 100 万随机整数做归并排序并输出耗时";
             case "javascript" -> "用 JavaScript 计算 500000 以内斐波那契数列中偶数的和";
-            case "shell" -> "用 Shell 遍历项目目录，统计各类源码文件的总行数";
+            case "shell" -> "用 Shell 循环生成 10 万个随机数，统计最大值、最小值、平均值与耗时";
             default -> null;
         };
     }

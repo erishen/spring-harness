@@ -300,6 +300,7 @@ onBeforeUnmount(() => {
 .runtime-panel {
   width: 240px;
   min-width: 240px;
+  flex-shrink: 0;
   height: 100%;
   background: #fafbfc;
   border-left: 1px solid #e5e7eb;
@@ -317,10 +318,11 @@ onBeforeUnmount(() => {
 .panel-header {
   display: flex; align-items: center; gap: 8px;
   padding: 4px 8px 12px; border-bottom: 1px solid #e5e7eb;
+  flex-wrap: nowrap;
 }
-.panel-icon { font-size: 18px; }
-.panel-title { font-size: 15px; font-weight: 600; color: #111827; }
-.panel-subtitle { margin-left: auto; font-size: 11px; color: #9ca3af; }
+.panel-icon { font-size: 18px; flex-shrink: 0; }
+.panel-title { font-size: 15px; font-weight: 600; color: #111827; flex-shrink: 0; white-space: nowrap; }
+.panel-subtitle { margin-left: auto; font-size: 11px; color: #9ca3af; white-space: nowrap; flex-shrink: 0; }
 
 .empty-hint { font-size: 11px; color: #9ca3af; padding: 4px 0; }
 

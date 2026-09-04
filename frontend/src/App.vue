@@ -750,6 +750,8 @@ header h1 { font-size: 16px; color: #1f2937; }
 /* ---- 内容区水平布局：主内容 + 右侧 Runtime 面板 ---- */
 .content-wrapper {
   display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
   flex: 1;
   min-height: 0;
   overflow: hidden;

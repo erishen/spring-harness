@@ -25,6 +25,8 @@ dev: compile frontend-install ## 开发模式：先启动后端(8080)，就绪�
 	-@lsof -ti:${FRONTEND_PORT} 2>/dev/null | xargs -r kill -9 2>/dev/null || true
 	-@pkill -f "spring-boot:run" 2>/dev/null || true
 	@sleep 1
+	@echo "确保运行时目录存在..."
+	@mkdir -p data/mcp-workspace logs/tasks
 	@echo ""
 	@echo "  🚀 启动后端 (端口 ${PORT})..."
 	@$(MVN) spring-boot:run 2>&1 | tee app.log &
@@ -46,9 +48,11 @@ dev: compile frontend-install ## 开发模式：先启动后端(8080)，就绪�
 	cd frontend && npm run dev
 
 run: ## 仅启动后端（前台，自动加载 .env）
+	@mkdir -p data/mcp-workspace logs/tasks
 	$(MVN) spring-boot:run
 
 run-bg: ## 仅后台启动后端，日志写入 app.log
+	@mkdir -p data/mcp-workspace logs/tasks
 	nohup $(MVN) spring-boot:run > app.log 2>&1 &
 	@echo "后端已后台启动，日志：app.log，端口：${PORT}"
 	@echo "查看日志：tail -f app.log"

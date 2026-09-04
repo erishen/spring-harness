@@ -110,10 +110,36 @@
                 <pre v-else-if="step.content" class="step-content">{{ step.content }}</pre>
                 <div v-if="step.step?.content && step.step.content !== step.content && isAnswerStep(step)" class="step-md task-result-content" v-html="renderMarkdown(step.step.content)"></div>
                 <pre v-else-if="step.step?.content && step.step.content !== step.content" class="step-content">{{ step.step.content }}</pre>
-                <div v-if="step.toolCall" class="step-tool">
+                <!-- tool_call：只显示入参（execute_code 单独展示代码，还原换行） -->
+                <div v-if="step.toolCall && step.type === 'tool_call'" class="step-tool">
                   <span class="tool-name">{{ step.toolCall.name }}</span>
-                  <pre class="tool-io">入参: {{ step.toolCall.input }}</pre>
-                  <pre v-if="step.toolCall.output" class="tool-io">结果: {{ step.toolCall.output }}</pre>
+                  <template v-if="step.toolCall.name === 'execute_code'">
+                    <div class="tool-io-label">代码</div>
+                    <pre class="tool-io code">{{ codeOf(step.toolCall.input) }}</pre>
+                  </template>
+                  <template v-else>
+                    <div class="tool-io-label">入参</div>
+                    <pre class="tool-io">{{ prettyJson(step.toolCall.input) }}</pre>
+                  </template>
+                </div>
+                <!-- tool_result：只显示结果（execute_code 分开展示 stdout / stderr） -->
+                <div v-else-if="step.toolCall && step.type === 'tool_result'" class="step-tool">
+                  <span class="tool-name">{{ step.toolCall.name }}</span>
+                  <template v-if="step.toolCall.name === 'execute_code'">
+                    <div class="tool-io-label">结果</div>
+                    <pre class="tool-io code">{{ stdoutOf(step.toolCall.output) }}</pre>
+                    <pre v-if="stderrOf(step.toolCall.output)" class="tool-io code err">{{ stderrOf(step.toolCall.output) }}</pre>
+                  </template>
+                  <template v-else>
+                    <div class="tool-io-label">结果</div>
+                    <pre class="tool-io">{{ prettyJson(step.toolCall.output) }}</pre>
+                  </template>
+                </div>
+                <!-- 其他步骤内的工具信息：原样显示 -->
+                <div v-else-if="step.toolCall" class="step-tool">
+                  <span class="tool-name">{{ step.toolCall.name }}</span>
+                  <pre v-if="step.toolCall.input" class="tool-io">入参: {{ prettyJson(step.toolCall.input) }}</pre>
+                  <pre v-if="step.toolCall.output" class="tool-io">结果: {{ prettyJson(step.toolCall.output) }}</pre>
                 </div>
               </div>
             </div>
@@ -254,6 +280,27 @@ async function fetchTasks() {
 // 判断步骤是否为 LLM 最终回答（Markdown），需要渲染展示
 function isAnswerStep(step) {
   return step?.type === 'answer' || step?.step?.role === 'answer'
+}
+
+// 尝试 JSON 美化（2 空格缩进），失败原样返回
+function prettyJson(str) {
+  if (!str) return ''
+  try { return JSON.stringify(JSON.parse(str), null, 2) } catch (e) { return str }
+}
+
+// execute_code 入参：提取 code 字段（还原换行），便于阅读
+function codeOf(input) {
+  try { return JSON.parse(input)?.code ?? input } catch (e) { return input }
+}
+
+// execute_code 结果：提取 stdout（无则回退整段）
+function stdoutOf(output) {
+  try { const o = JSON.parse(output); return o.stdout ?? output } catch (e) { return output }
+}
+
+// execute_code 结果：提取 stderr（无则空）
+function stderrOf(output) {
+  try { return JSON.parse(output)?.stderr || '' } catch (e) { return '' }
 }
 
 // 打开详情后给「结果」Markdown 渲染的代码块加语言标签 + 复制按钮
@@ -904,12 +951,32 @@ onUnmounted(() => {
   padding: 4px 6px;
 }
 .tool-name { font-weight: 600; color: #0369a1; font-size: 11px; }
+.tool-io-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 3px;
+}
 .tool-io {
   font-size: 11px;
   color: #475569;
   white-space: pre-wrap;
   word-break: break-word;
   margin-top: 2px;
+}
+.tool-io.code {
+  font-family: 'SF Mono', 'Menlo', Monaco, monospace;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 11px;
+  color: #334155;
+}
+.tool-io.code.err {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
 }
 
 /* ===== 执行日志 ===== */

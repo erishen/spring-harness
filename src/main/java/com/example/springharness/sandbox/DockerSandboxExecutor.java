@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * - 超时自动 kill（默认 30 秒）
  * - 输出大小限制（默认 100KB）
  *
- * 支持语言：python、javascript、shell
+ * 支持语言：python、javascript、shell、java、go、rust、c、cpp
  */
 @Component
 public class DockerSandboxExecutor {
@@ -49,21 +49,59 @@ public class DockerSandboxExecutor {
     private static final java.util.Map<String, String> LANGUAGE_IMAGES = java.util.Map.of(
             "python", "python:3.11-slim",
             "javascript", "node:20-slim",
-            "shell", "alpine:3.19"
+            "shell", "alpine:3.19",
+            "java", "eclipse-temurin:17-jdk",
+            "go", "golang:1.22-alpine",
+            "rust", "rust:1.75-slim",
+            "c", "gcc:13",
+            "cpp", "gcc:13"
     );
 
-    /** 语言 -> 执行命令映射 */
+    /** 语言 -> 执行命令映射（经 sh -c 执行，支持 && 等 shell 操作符） */
     private static final java.util.Map<String, String> LANGUAGE_COMMANDS = java.util.Map.of(
             "python", "python3 /tmp/code.py",
             "javascript", "node /tmp/code.js",
-            "shell", "sh /tmp/code.sh"
+            "shell", "sh /tmp/code.sh",
+            "java", "java /tmp/Main.java",
+            "go", "env GOPATH=/tmp/gopath GOCACHE=/tmp/gocache go run /tmp/code.go",
+            "rust", "rustc /tmp/code.rs -o /tmp/code && /tmp/code",
+            "c", "gcc /tmp/code.c -o /tmp/code && /tmp/code",
+            "cpp", "g++ /tmp/code.cpp -o /tmp/code && /tmp/code"
     );
+
+    /** 语言 -> 容器内代码文件名（java 用 Main.java 匹配 public class Main 的源码模式约定） */
+    private static final java.util.Map<String, String> LANGUAGE_FILENAMES = java.util.Map.of(
+            "python", "code.py",
+            "javascript", "code.js",
+            "shell", "code.sh",
+            "java", "Main.java",
+            "go", "code.go",
+            "rust", "code.rs",
+            "c", "code.c",
+            "cpp", "code.cpp"
+    );
+
+    /**
+     * 规范化语言名，支持常见别名。
+     */
+    private static String normalizeLanguage(String language) {
+        if (language == null) return "python";
+        String l = language.toLowerCase().trim();
+        return switch (l) {
+            case "py", "python3" -> "python";
+            case "js", "node", "nodejs" -> "javascript";
+            case "sh", "bash", "zsh" -> "shell";
+            case "c++", "cxx", "cplusplus" -> "cpp";
+            case "rs" -> "rust";
+            default -> l;
+        };
+    }
 
     /**
      * 执行代码，返回执行结果。
      *
      * @param code     要执行的代码
-     * @param language 语言：python / javascript / shell
+     * @param language 语言：python / javascript / shell / java / go / rust / c / cpp（含常见别名）
      * @param timeout  超时时间（秒），为 null 时用默认值
      * @return 执行结果（stdout、stderr、退出码、执行时间、是否超时）
      */
@@ -76,8 +114,8 @@ public class DockerSandboxExecutor {
                     System.currentTimeMillis() - startTime);
         }
 
-        // 校验语言
-        String lang = language == null ? "python" : language.toLowerCase().trim();
+        // 校验语言（规范化别名）
+        String lang = normalizeLanguage(language);
         if (!LANGUAGE_IMAGES.containsKey(lang)) {
             return SandboxResult.error("不支持的语言：" + language + "，支持：" + LANGUAGE_IMAGES.keySet(),
                     System.currentTimeMillis() - startTime);
@@ -95,13 +133,8 @@ public class DockerSandboxExecutor {
         File codeFile = null;
         try {
             tempDir = Files.createTempDirectory("sandbox-").toFile();
-            String ext = switch (lang) {
-                case "python" -> "py";
-                case "javascript" -> "js";
-                case "shell" -> "sh";
-                default -> "txt";
-            };
-            codeFile = new File(tempDir, "code." + ext);
+            String filename = LANGUAGE_FILENAMES.get(lang);
+            codeFile = new File(tempDir, filename);
             Files.writeString(codeFile.toPath(), code, StandardCharsets.UTF_8);
 
             // 构建 docker run 命令
@@ -168,19 +201,15 @@ public class DockerSandboxExecutor {
         cmd.add("--cpus"); cmd.add(String.valueOf(cpus)); // CPU 限制
         cmd.add("--pids-limit"); cmd.add("100"); // 进程数限制
         cmd.add("--ulimit"); cmd.add("nofile=64:64"); // 文件描述符限制
-        cmd.add("-v"); cmd.add(codeFile.getAbsolutePath() + ":/tmp/code." +
-                switch (language) {
-                    case "python" -> "py";
-                    case "javascript" -> "js";
-                    case "shell" -> "sh";
-                    default -> "txt";
-                } + ":ro");  // 挂载代码文件（只读）
-        cmd.add("--tmpfs"); cmd.add("/tmp:rw,size=64m"); // /tmp 可写（内存文件系统）
+        cmd.add("-v"); cmd.add(codeFile.getAbsolutePath() + ":/tmp/" +
+                LANGUAGE_FILENAMES.get(language) + ":ro");  // 挂载代码文件（只读）
+        cmd.add("--tmpfs"); cmd.add("/tmp:rw,size=128m"); // /tmp 可写（内存文件系统，编译输出/缓存）
         cmd.add("--stop-timeout"); cmd.add(String.valueOf(Math.min(timeoutSeconds, 10))); // 停止超时
         cmd.add(LANGUAGE_IMAGES.get(language));  // 镜像
-        // 执行命令
-        String[] execCmd = LANGUAGE_COMMANDS.get(language).split(" ");
-        cmd.addAll(List.of(execCmd));
+        // 执行命令：统一经 sh -c 执行，支持 && 等 shell 操作符（编译后运行）
+        cmd.add("sh");
+        cmd.add("-c");
+        cmd.add(LANGUAGE_COMMANDS.get(language));
         return cmd;
     }
 

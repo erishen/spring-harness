@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import java.util.function.Function;
 
 /**
- * 代码执行工具：在 Docker 沙箱中执行 Python / JavaScript / Shell 代码。
+ * 代码执行工具：在 Docker 沙箱中执行 Python / JavaScript / Shell / Java / Go / Rust / C / C++ 代码。
  *
  * 安全特性：
  * - 独立 Docker 容器，执行完自动销毁
@@ -25,7 +25,7 @@ import java.util.function.Function;
  * - 任何需要实际运行代码的任务
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonClassDescription("在 Docker 沙箱中执行代码，支持 Python、JavaScript、Shell。返回标准输出、标准错误、退出码和执行时间。适用于复杂计算、数据分析、算法验证、文件处理等需要实际运行代码的场景。")
+@JsonClassDescription("在 Docker 沙箱中执行代码，支持 python、javascript、shell、java、go、rust、c、cpp。返回标准输出、标准错误、退出码和执行时间。适用于复杂计算、数据分析、算法验证、文件处理等需要实际运行代码的场景。")
 public class CodeExecutionTool implements Function<CodeExecutionTool.Request, CodeExecutionTool.Response> {
 
     private final DockerSandboxExecutor sandboxExecutor;
@@ -40,7 +40,7 @@ public class CodeExecutionTool implements Function<CodeExecutionTool.Request, Co
             String code,
 
             @JsonProperty(required = false, value = "language")
-            @JsonPropertyDescription("编程语言：python（默认）、javascript、shell")
+            @JsonPropertyDescription("编程语言：python（默认）、javascript、shell、java、go、rust、c、cpp（支持别名 js/node、py、sh/bash、c++/cxx）")
             String language,
 
             @JsonProperty(required = false, value = "timeout")

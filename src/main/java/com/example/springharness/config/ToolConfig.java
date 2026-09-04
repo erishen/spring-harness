@@ -61,7 +61,7 @@ public class ToolConfig {
     @Bean
     public ToolCallback codeExecutionTool(DockerSandboxExecutor sandboxExecutor) {
         return FunctionToolCallback.builder("execute_code", new CodeExecutionTool(sandboxExecutor))
-                .description("在 Docker 沙箱中执行代码，支持 python、javascript、shell。返回标准输出、标准错误、退出码和执行时间。适用于复杂计算、数据分析、算法验证、文件处理等需要实际运行代码的场景。")
+                .description("在 Docker 沙箱中执行代码，支持 python、javascript、shell、java、go、rust、c、cpp。返回标准输出、标准错误、退出码和执行时间。适用于复杂计算、数据分析、算法验证、文件处理等需要实际运行代码的场景。")
                 .inputType(CodeExecutionTool.Request.class)
                 .build();
     }

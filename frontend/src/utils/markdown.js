@@ -77,14 +77,21 @@ marked.setOptions({
 
 /**
  * 渲染 Markdown 为 HTML 字符串。
- * 预处理：修复 LLM 生成的不规范语法（标题/列表后缺空格）。
+ * 预处理：修复 LLM 生成的不规范语法（标题/列表后缺空格、加粗星号位置错误）。
  */
 export function renderMarkdown(content) {
   if (!content) return ''
   let processed = content
+  // 标题后缺空格：##标题 → ## 标题
   processed = processed.replace(/^(#{1,6})([^#\s])/gm, '$1 $2')
+  // 列表后缺空格：-列表 → - 列表
   processed = processed.replace(/^([*\-])([^\s])/gm, '$1 $2')
   processed = processed.replace(/^(\d+\.)([^\s])/gm, '$1 $2')
+  // 不规范加粗：行首 "词*：" 或 "词* " → "**词**：" 或 "**词** "
+  // 匹配中文/字母/数字组成的词，后跟单个星号+冒号/空格
+  processed = processed.replace(/^([\u4e00-\u9fa5a-zA-Z0-9]{1,10})\*([：:\s])/gm, '**$1**$2')
+  // 不规范加粗：行内 "词*：" → "**词**："（仅当星号前是中文/字母，星号后是冒号）
+  processed = processed.replace(/([\u4e00-\u9fa5a-zA-Z])\*([：:])/g, '$1**$2')
   return marked.parse(processed)
 }
 

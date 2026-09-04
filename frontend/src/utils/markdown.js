@@ -92,6 +92,8 @@ export function renderMarkdown(content) {
   processed = processed.replace(/^([\u4e00-\u9fa5a-zA-Z0-9]{1,10})[*＊]([：:\s])/gm, '**$1**$2')
   // 不规范加粗：行内 "词*：" → "**词**："（星号前是连续的中文/字母/数字，星号后是冒号）
   processed = processed.replace(/([\u4e00-\u9fa5a-zA-Z0-9]+)[*＊]([：:])/g, '**$1**$2')
+  // 不规范加粗/斜体："*词*：" → "**词**："（LLM 常把加粗写成斜体格式，后面多一个星号）
+  processed = processed.replace(/[*＊]([\u4e00-\u9fa5a-zA-Z0-9]{1,10})[*＊]([：:])/g, '**$1**$2')
   return marked.parse(processed)
 }
 

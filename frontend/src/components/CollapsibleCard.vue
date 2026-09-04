@@ -87,7 +87,7 @@ const expanded = ref(props.defaultExpanded)
   text-overflow: ellipsis;
 }
 .card-body {
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-top: 1px solid #f3f4f6;
 }
 </style>

@@ -8,9 +8,26 @@ target/
 
 # 本地环境配置（含密钥，不提交）
 .env
+.env.local
+.env.*.local
+!.env.example
 
 # 本地运行日志
 app.log
+logs/
+
+# 数据库文件（SQLite 等，本地数据不提交）
+*.db
+*.sqlite
+*.sqlite3
+
+# 沙箱执行产物（代码沙箱临时文件）
+sandbox/
+
+# 缓存目录
+.cache/
+*.tmp
+*.temp
 
 # 前端
 frontend/node_modules/

@@ -1,11 +1,16 @@
 /**
  * useSessions composable
  * 多会话管理：创建、切换、删除、重命名会话，localStorage 持久化
+ * 隐私保护：会话自动过期清理（默认 30 天），存储溢出时提示用户
  */
 import { ref, computed, watch } from 'vue'
 
 const STORAGE_KEY = 'spring-harness-sessions'
 const CURRENT_KEY = 'spring-harness-current-session'
+
+/** 会话过期时间（毫秒），默认 30 天。可通过 window.SESSION_EXPIRY_DAYS 覆盖 */
+const EXPIRY_DAYS = window.SESSION_EXPIRY_DAYS || 30
+const EXPIRY_MS = EXPIRY_DAYS * 24 * 60 * 60 * 1000
 
 /** 生成唯一会话 ID */
 function generateId() {
@@ -20,14 +25,26 @@ function defaultMessages() {
   }]
 }
 
-/** 从 localStorage 加载会话 */
+/** 从 localStorage 加载会话，并自动清理过期会话 */
 function loadSessions() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY)
     if (saved) {
       const sessions = JSON.parse(saved)
       if (Array.isArray(sessions) && sessions.length > 0) {
-        return sessions
+        // 过滤掉过期会话（超过 EXPIRY_DAYS 天未更新）
+        const now = Date.now()
+        const valid = sessions.filter(s => {
+          const lastUpdate = s.updatedAt || s.createdAt || now
+          return (now - lastUpdate) < EXPIRY_MS
+        })
+        const expiredCount = sessions.length - valid.length
+        if (expiredCount > 0) {
+          console.info(`[隐私保护] 已自动清理 ${expiredCount} 个超过 ${EXPIRY_DAYS} 天未更新的会话`)
+        }
+        if (valid.length > 0) {
+          return valid
+        }
       }
     }
   } catch (e) {
@@ -162,12 +179,18 @@ export function useSessions() {
     } catch (e) {
       console.error('保存会话失败', e)
       if (e.name === 'QuotaExceededError') {
-        // 存储溢出，删除最旧的会话
+        // 存储溢出，先尝试删除最旧的会话
         if (sessions.value.length > 1) {
-          sessions.value.pop()
+          const oldest = [...sessions.value].sort((a, b) =>
+            (a.updatedAt || 0) - (b.updatedAt || 0)
+          )[0]
+          console.warn(`[存储溢出] 自动删除最旧会话: ${oldest.title}`)
+          deleteSession(oldest.id)
           saveSessions()
         } else {
-          localStorage.removeItem(STORAGE_KEY)
+          // 只有一个会话，提示用户手动清理
+          console.error('[存储溢出] localStorage 已满，无法保存聊天记录。请删除旧会话或清理浏览器存储。')
+          alert('浏览器存储空间已满，聊天记录将无法保存。\n\n建议：\n1. 删除不需要的旧会话\n2. 或在浏览器设置中清理本站点存储\n\n当前会话数量：' + sessions.value.length)
         }
       }
     }

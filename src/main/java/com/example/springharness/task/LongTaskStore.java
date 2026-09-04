@@ -191,6 +191,37 @@ public class LongTaskStore {
         }
     }
 
+    /**
+     * 清理过期的已完成任务（隐私保护 + 防止数据库无限增长）。
+     *
+     * <p>只删除已完成（status=completed/failed）且 finished_at 超过 retentionDays 天的任务。
+     * 正在运行（running/pending）的任务不会被删除，避免中断执行中的任务。
+     *
+     * @param retentionDays 保留天数（默认 30 天）
+     * @return 被删除的任务数量
+     */
+    public int cleanupExpired(int retentionDays) {
+        long cutoff = System.currentTimeMillis() - (long) retentionDays * 24 * 60 * 60 * 1000;
+        String sql = """
+                DELETE FROM long_tasks
+                WHERE status IN ('completed', 'failed', 'cancelled')
+                  AND finished_at > 0
+                  AND finished_at < ?
+                """;
+        try (Connection c = openConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            ps.setLong(1, cutoff);
+            int deleted = ps.executeUpdate();
+            if (deleted > 0) {
+                log.info("[隐私保护] 已清理 {} 个超过 {} 天的已完成长时任务", deleted, retentionDays);
+            }
+            return deleted;
+        } catch (SQLException e) {
+            log.warn("清理过期任务失败: {}", e.getMessage());
+            return 0;
+        }
+    }
+
     private LongTask mapRow(ResultSet rs) throws SQLException {
         return LongTask.restore(
                 rs.getString("id"),

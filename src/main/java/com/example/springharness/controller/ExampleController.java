@@ -67,6 +67,13 @@ public class ExampleController {
     @Value("${DASHSCOPE_MODEL:qwen-plus}")
     private String defaultModel;
 
+    /** LLM 生成示例次数（监控指标挂点） */
+    private final java.util.concurrent.atomic.AtomicLong llmGeneratedCount = new java.util.concurrent.atomic.AtomicLong(0);
+
+    public long getLlmGeneratedCount() {
+        return llmGeneratedCount.get();
+    }
+
     public ExampleController(ToolDescriptionService toolDescriptionService,
                              McpToolProvider mcpToolProvider,
                              DockerSandboxExecutor sandboxExecutor,
@@ -132,6 +139,7 @@ public class ExampleController {
         List<Map<String, Object>> examples;
         if (llm) {
             examples = generateByLlm(mode, cap);
+            llmGeneratedCount.incrementAndGet();
             log.info("示例任务 LLM 生成: mode={}, 条数={}", mode, examples.size());
         } else {
             examples = buildByMode(mode, cap);

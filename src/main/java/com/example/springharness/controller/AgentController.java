@@ -127,6 +127,9 @@ public class AgentController {
         SseEmitter emitter = new SseEmitter(180000L); // 180秒超时
         AtomicBoolean completed = new AtomicBoolean(false);
 
+        // 心跳：Agent 思考/工具调用间隙无输出时保持连接活跃，防止中间代理超时断流
+        com.example.springharness.util.SseSupport.startHeartbeat(emitter);
+
         // 客户端断开/超时/出错时标记完成
         Runnable markCompleted = () -> completed.compareAndSet(false, true);
         emitter.onCompletion(markCompleted);

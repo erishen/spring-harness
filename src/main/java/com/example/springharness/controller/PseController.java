@@ -78,6 +78,9 @@ public class PseController {
         SseEmitter emitter = new SseEmitter(300000L); // 300秒超时（PSE 多任务可能耗时较长）
         AtomicBoolean completed = new AtomicBoolean(false);
 
+        // 心跳：Planner/Specialist 思考或工具调用间隙无输出时保持连接活跃，防止中间代理超时断流
+        com.example.springharness.util.SseSupport.startHeartbeat(emitter);
+
         // 客户端断开/超时/出错时标记完成
         Runnable markCompleted = () -> {
             if (completed.compareAndSet(false, true)) {

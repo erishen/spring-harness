@@ -154,6 +154,13 @@ public class TaskManager {
         return sorted;
     }
 
+    /** 当前运行中任务数（监控指标挂点） */
+    public long activeCount() {
+        return tasks.values().stream()
+                .filter(t -> LongTask.STATUS_RUNNING.equals(t.getStatus()))
+                .count();
+    }
+
     /**
      * 中断任务：置中断信号（ReAct/PSE 协作式中断）+ 尝试 interrupt 执行线程。
      *

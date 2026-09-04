@@ -110,3 +110,16 @@ sandbox:
   cpus: ${SANDBOX_CPUS:1}
   # 输出大小限制（KB）
   max-output-kb: ${SANDBOX_MAX_OUTPUT_KB:100}
+
+# Actuator 监控：健康检查 + 指标 + Prometheus
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  metrics:
+    tags:
+      application: spring-harness

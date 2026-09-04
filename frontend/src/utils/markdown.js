@@ -88,10 +88,10 @@ export function renderMarkdown(content) {
   processed = processed.replace(/^([*\-])([^\s])/gm, '$1 $2')
   processed = processed.replace(/^(\d+\.)([^\s])/gm, '$1 $2')
   // 不规范加粗：行首 "词*：" 或 "词* " → "**词**：" 或 "**词** "
-  // 匹配中文/字母/数字组成的词，后跟单个星号+冒号/空格
-  processed = processed.replace(/^([\u4e00-\u9fa5a-zA-Z0-9]{1,10})\*([：:\s])/gm, '**$1**$2')
+  // 匹配中文/字母/数字组成的词，后跟单个星号(半角*或全角＊)+冒号/空格
+  processed = processed.replace(/^([\u4e00-\u9fa5a-zA-Z0-9]{1,10})[*＊]([：:\s])/gm, '**$1**$2')
   // 不规范加粗：行内 "词*：" → "**词**："（星号前是连续的中文/字母/数字，星号后是冒号）
-  processed = processed.replace(/([\u4e00-\u9fa5a-zA-Z0-9]+)\*([：:])/g, '**$1**$2')
+  processed = processed.replace(/([\u4e00-\u9fa5a-zA-Z0-9]+)[*＊]([：:])/g, '**$1**$2')
   return marked.parse(processed)
 }
 

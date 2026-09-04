@@ -4,6 +4,7 @@ import com.example.springharness.tool.CalculatorTool;
 import com.example.springharness.tool.CodeExecutionTool;
 import com.example.springharness.tool.DateTimeTool;
 import com.example.springharness.tool.ExchangeRateTool;
+import com.example.springharness.tool.FileReadTool;
 import com.example.springharness.tool.RagSearchTool;
 import com.example.springharness.tool.SkillRunTool;
 import com.example.springharness.tool.StockTool;
@@ -79,6 +80,14 @@ public class ToolConfig {
         return FunctionToolCallback.builder("search_knowledge", ragSearchTool)
                 .description("知识库语义检索（Rerank 精排）：基于已上传的知识库文档（PDF/TXT/MD）检索并精排与问题最相关的文本片段。当用户问题涉及已上传文档的内容（如产品资料、项目文档、规章制度等）时，先调用此工具检索相关上下文，再基于检索结果回答；不要凭印象编造知识库内容。参数：query（检索问题/关键词）、topK（返回片段数，默认4，最大8）。")
                 .inputType(RagSearchTool.Request.class)
+                .build();
+    }
+
+    @Bean
+    public ToolCallback fileReadTool() {
+        return FunctionToolCallback.builder("read_file", new FileReadTool())
+                .description("读取本地文本文件内容。当需要审查代码、查看配置、分析文件内容、执行 code-review 等技能时使用。参数为文件路径（相对于项目根目录，如 src/main/java/com/example/MyClass.java）。安全限制：只能读取项目目录下的文本文件，不能读取 .env 等敏感文件，单文件最大 100KB。")
+                .inputType(FileReadTool.Request.class)
                 .build();
     }
 }

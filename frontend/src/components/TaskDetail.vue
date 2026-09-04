@@ -200,39 +200,39 @@ function stderrOf(output) {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 4px 6px;
-  padding: 4px 6px;
+  gap: 6px 8px;
+  padding: 10px 12px;
   background: #fff;
   border: 1px solid #eef0f3;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 .step-seq {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   color: #9ca3af;
-  min-width: 14px;
+  min-width: 16px;
 }
 .step-type {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
-  padding: 1px 5px;
-  border-radius: 3px;
+  padding: 2px 7px;
+  border-radius: 4px;
   background: #f3f4f6;
   color: #6b7280;
   text-transform: uppercase;
 }
 .step-title {
-  font-size: 10.5px;
+  font-size: 12px;
   color: #374151;
-  font-weight: 500;
+  font-weight: 600;
 }
 .step-md {
   width: 100%;
-  margin: 4px 0 2px;
-  padding: 8px 10px;
+  margin: 6px 0 2px;
+  padding: 10px 12px;
   background: #f9fafb;
   border: 1px solid #eef0f3;
-  border-radius: 4px;
+  border-radius: 5px;
   font-size: 12px;
   color: #374151;
   line-height: 1.6;
@@ -371,9 +371,9 @@ function stderrOf(output) {
 }
 .task-result-content :deep(a:hover) { text-decoration: underline; }
 
-/* step-md（answer 步骤中的 Markdown）同样需要 :deep() */
+/* step-md（步骤中的 Markdown）同样需要 :deep() */
 .step-md :deep(table) {
-  width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
   margin: 8px 0;
   font-size: 11.5px;
@@ -383,26 +383,55 @@ function stderrOf(output) {
 .step-md :deep(th),
 .step-md :deep(td) {
   border: 1px solid #e5e7eb;
-  padding: 5px 8px;
+  padding: 6px 10px;
   text-align: left;
   white-space: nowrap;
 }
 .step-md :deep(thead) { background: #f3f4f6; }
+.step-md :deep(tbody tr:nth-child(even)) { background: #fafbfc; }
 .step-md :deep(pre) {
-  margin: 6px 0;
-  padding: 8px 10px;
+  margin: 8px 0;
+  padding: 10px 12px;
   background: #1e293b;
   border-radius: 5px;
   overflow-x: auto;
   font-size: 11px;
+  line-height: 1.5;
 }
 .step-md :deep(pre code) { background: none; color: #e2e8f0; }
 .step-md :deep(code) {
   background: #f3f4f6;
-  padding: 1px 4px;
+  padding: 1px 5px;
   border-radius: 3px;
   font-size: 11px;
   color: #be185d;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+.step-md :deep(p) { margin: 5px 0; }
+.step-md :deep(ul),
+.step-md :deep(ol) {
+  margin: 5px 0;
+  padding-left: 20px;
+}
+.step-md :deep(li) { margin: 2px 0; }
+.step-md :deep(h1),
+.step-md :deep(h2),
+.step-md :deep(h3),
+.step-md :deep(h4) {
+  margin: 10px 0 5px;
+  font-weight: 600;
+  color: #111827;
+}
+.step-md :deep(h1) { font-size: 15px; }
+.step-md :deep(h2) { font-size: 14px; }
+.step-md :deep(h3) { font-size: 13px; }
+.step-md :deep(h4) { font-size: 12.5px; }
+.step-md :deep(blockquote) {
+  margin: 8px 0;
+  padding: 6px 12px;
+  border-left: 3px solid #d1d5db;
+  background: #fff;
+  color: #6b7280;
 }
 
 /* 执行日志 */

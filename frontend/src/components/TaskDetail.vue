@@ -1,5 +1,5 @@
 <template>
-  <div class="task-detail" @click.stop>
+  <div class="task-detail" ref="rootEl" @click.stop>
     <!-- 复制执行过程 -->
     <div class="task-detail-tools">
       <button class="copy-detail-btn" :class="{ copied: copyDone === task.id }" @click="$emit('copyDetail', task)">
@@ -88,7 +88,8 @@
 </template>
 
 <script setup>
-import { renderMarkdown } from '../utils/markdown.js'
+import { ref, watch, nextTick, onMounted } from 'vue'
+import { renderMarkdown, enhanceCodeBlocks } from '../utils/markdown.js'
 
 const props = defineProps({
   task: { type: Object, required: true },
@@ -97,6 +98,21 @@ const props = defineProps({
 })
 
 defineEmits(['copyDetail', 'toggleLog'])
+
+const rootEl = ref(null)
+
+// 渲染后增强代码块（添加复制按钮）
+function applyCodeEnhance() {
+  nextTick(() => {
+    if (rootEl.value) {
+      enhanceCodeBlocks(rootEl.value)
+    }
+  })
+}
+
+onMounted(applyCodeEnhance)
+watch(() => props.task.result, applyCodeEnhance)
+watch(() => props.task.steps, applyCodeEnhance, { deep: true })
 
 function isAnswerStep(step) {
   return step?.type === 'answer' || step?.step?.role === 'answer'
@@ -273,7 +289,127 @@ function stderrOf(output) {
   font-size: 12.5px;
   color: #1f2937;
   line-height: 1.6;
-  word-break: break-word;
+}
+/* v-html 动态渲染的 Markdown 内容需要 :deep() 穿透 scoped */
+.task-result-content :deep(h1),
+.task-result-content :deep(h2),
+.task-result-content :deep(h3),
+.task-result-content :deep(h4) {
+  margin: 12px 0 6px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.4;
+}
+.task-result-content :deep(h1) { font-size: 16px; }
+.task-result-content :deep(h2) { font-size: 15px; }
+.task-result-content :deep(h3) { font-size: 14px; }
+.task-result-content :deep(h4) { font-size: 13px; }
+.task-result-content :deep(p) { margin: 6px 0; }
+.task-result-content :deep(ul),
+.task-result-content :deep(ol) {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+.task-result-content :deep(li) { margin: 2px 0; }
+.task-result-content :deep(strong) { color: #111827; font-weight: 600; }
+.task-result-content :deep(em) { color: #4b5563; }
+.task-result-content :deep(blockquote) {
+  margin: 8px 0;
+  padding: 6px 12px;
+  border-left: 3px solid #d1d5db;
+  background: #f9fafb;
+  color: #6b7280;
+}
+/* 表格样式：关键修复 */
+.task-result-content :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0;
+  font-size: 12px;
+  display: block;
+  overflow-x: auto;
+}
+.task-result-content :deep(thead) { background: #f3f4f6; }
+.task-result-content :deep(th),
+.task-result-content :deep(td) {
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+.task-result-content :deep(th) {
+  font-weight: 600;
+  color: #374151;
+}
+.task-result-content :deep(tbody tr:nth-child(even)) { background: #fafbfc; }
+.task-result-content :deep(tbody tr:hover) { background: #f0f7ff; }
+/* 代码块 */
+.task-result-content :deep(pre) {
+  margin: 8px 0;
+  padding: 10px 12px;
+  background: #1e293b;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
+.task-result-content :deep(pre code) {
+  background: none;
+  padding: 0;
+  color: #e2e8f0;
+  font-family: 'SF Mono', Monaco, monospace;
+}
+.task-result-content :deep(code) {
+  background: #f3f4f6;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 11.5px;
+  font-family: 'SF Mono', Monaco, monospace;
+  color: #be185d;
+}
+.task-result-content :deep(hr) {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 12px 0;
+}
+.task-result-content :deep(a) {
+  color: #2563eb;
+  text-decoration: none;
+}
+.task-result-content :deep(a:hover) { text-decoration: underline; }
+
+/* step-md（answer 步骤中的 Markdown）同样需要 :deep() */
+.step-md :deep(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0;
+  font-size: 11.5px;
+  display: block;
+  overflow-x: auto;
+}
+.step-md :deep(th),
+.step-md :deep(td) {
+  border: 1px solid #e5e7eb;
+  padding: 5px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+.step-md :deep(thead) { background: #f3f4f6; }
+.step-md :deep(pre) {
+  margin: 6px 0;
+  padding: 8px 10px;
+  background: #1e293b;
+  border-radius: 5px;
+  overflow-x: auto;
+  font-size: 11px;
+}
+.step-md :deep(pre code) { background: none; color: #e2e8f0; }
+.step-md :deep(code) {
+  background: #f3f4f6;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #be185d;
 }
 
 /* 执行日志 */

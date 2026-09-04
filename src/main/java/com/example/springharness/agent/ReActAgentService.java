@@ -267,8 +267,6 @@ public class ReActAgentService {
                 String name = tool.getToolDefinition().name();
                 if (!uniqueTools.containsKey(name)) {
                     uniqueTools.put(name, tool);
-                } else {
-                    log.debug("MCP 工具 {} 与本地工具重名，已跳过", name);
                 }
             }
         }

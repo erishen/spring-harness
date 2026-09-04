@@ -171,14 +171,22 @@ public class RagService {
     }
 
     /**
-     * 获取文档内容（用于预览），按块顺序拼接。
+     * 获取文档内容（用于预览），每个块前标注序号。
      */
     public String getDocumentContent(String docId) {
         List<String> chunks = documentContents.get(docId);
         if (chunks == null || chunks.isEmpty()) {
             return null;
         }
-        return String.join("\n\n---\n\n", chunks);
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < chunks.size(); i++) {
+            if (i > 0) {
+                sb.append("\n\n");
+            }
+            sb.append("**【块 ").append(i + 1).append(" / ").append(chunks.size()).append("】**\n\n");
+            sb.append(chunks.get(i));
+        }
+        return sb.toString();
     }
 
     /**

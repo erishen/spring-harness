@@ -160,13 +160,19 @@
           </div>
         </div>
         <div class="sandbox-detail" v-if="sandboxStatus.enabled">
-          <div class="detail-row">
+          <div class="detail-block">
             <span class="detail-label">支持语言</span>
-            <span class="detail-value">{{ (sandboxStatus.supportedLanguages || []).join(', ') }}</span>
+            <div class="lang-chips">
+              <span class="lang-chip" v-for="lang in sandboxStatus.supportedLanguages" :key="lang">{{ lang }}</span>
+            </div>
           </div>
           <div class="detail-row" v-if="sandboxStatus.config">
             <span class="detail-label">资源限制</span>
             <span class="detail-value">{{ sandboxStatus.config.memoryMb }}MB · {{ sandboxStatus.config.cpus }}核 · {{ sandboxStatus.config.timeoutSeconds }}s</span>
+          </div>
+          <div class="detail-row" v-if="sandboxStatus.config">
+            <span class="detail-label">输出上限</span>
+            <span class="detail-value">{{ sandboxStatus.config.maxOutputKb }}KB</span>
           </div>
         </div>
         <div class="hint-text" v-if="!sandboxStatus.enabled">
@@ -675,8 +681,33 @@ onBeforeUnmount(() => {
   padding: 6px 0 6px 22px;
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+.detail-block {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 }
+.lang-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.lang-chip {
+  font-size: 10px;
+  font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+  font-weight: 500;
+  color: #374151;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+.lang-chip:nth-child(5n + 1) { background: #eff6ff; border-color: #bfdbfe; color: #2563eb; }
+.lang-chip:nth-child(5n + 2) { background: #ecfdf5; border-color: #a7f3d0; color: #059669; }
+.lang-chip:nth-child(5n + 3) { background: #fefce8; border-color: #fde68a; color: #a16207; }
+.lang-chip:nth-child(5n + 4) { background: #fdf2f8; border-color: #fbcfe8; color: #be185d; }
+.lang-chip:nth-child(5n + 5) { background: #f5f3ff; border-color: #ddd6fe; color: #6d28d9; }
 .detail-row {
   display: flex;
   justify-content: space-between;

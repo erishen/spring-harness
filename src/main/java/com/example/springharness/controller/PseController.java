@@ -1,5 +1,6 @@
 package com.example.springharness.controller;
 
+import com.example.springharness.util.ErrorSanitizer;
 import com.example.springharness.pse.PseOrchestrator;
 import com.example.springharness.pse.PseResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -127,7 +128,7 @@ public class PseController {
                 if (!completed.get()) {
                     try {
                         emitter.send(SseEmitter.event().data(
-                                objectMapper.writeValueAsString(Map.of("type", "error", "content", e.getMessage()))
+                                objectMapper.writeValueAsString(Map.of("type", "error", "content", ErrorSanitizer.sanitize(e)))
                         ));
                         emitter.completeWithError(e);
                     } catch (IOException | IllegalStateException ignored) {

@@ -1,5 +1,6 @@
 package com.example.springharness.config;
 
+import com.example.springharness.util.ErrorSanitizer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -39,15 +40,15 @@ public class GlobalExceptionHandler {
     /** 处理运行时异常 */
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntime(RuntimeException e) {
-        // 过滤可能包含敏感信息的异常消息
-        String message = safeErrorMessage(e.getMessage());
+        // 使用统一脱敏工具过滤敏感信息
+        String message = ErrorSanitizer.sanitize(e);
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, message);
     }
 
     /** 处理所有其他异常 */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleException(Exception e) {
-        String message = safeErrorMessage(e.getMessage());
+        String message = ErrorSanitizer.sanitize(e);
         return buildError(HttpStatus.INTERNAL_SERVER_ERROR, message);
     }
 
@@ -58,19 +59,5 @@ public class GlobalExceptionHandler {
         body.put("message", message != null ? message : "未知错误");
         body.put("data", null);
         return ResponseEntity.status(status).body(body);
-    }
-
-    /** 过滤异常消息中的敏感信息（API Key、URL 等） */
-    private String safeErrorMessage(String message) {
-        if (message == null) return "未知错误";
-        // 过滤 API Key / token
-        message = message.replaceAll("(?i)(token|api[_-]?key|secret|password)=[^&\\s\"]+", "$1=***");
-        // 过滤完整 URL（可能包含 token 参数）
-        message = message.replaceAll("https?://[^\\s\"]+", "[URL已隐藏]");
-        // 限制长度
-        if (message.length() > 300) {
-            message = message.substring(0, 300) + "...";
-        }
-        return message;
     }
 }

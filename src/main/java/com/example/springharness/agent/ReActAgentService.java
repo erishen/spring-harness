@@ -1,5 +1,6 @@
 package com.example.springharness.agent;
 
+import com.example.springharness.util.ErrorSanitizer;
 import com.example.springharness.memory.MemoryService;
 import com.example.springharness.pse.McpToolProvider;
 import com.example.springharness.service.MultiModelService;
@@ -243,7 +244,7 @@ public class ReActAgentService {
                 try {
                     return callback.call(toolInput);
                 } catch (Exception e) {
-                    return "工具执行失败: " + e.getMessage();
+                    return "工具执行失败: " + ErrorSanitizer.sanitize(e);
                 }
             }
         }

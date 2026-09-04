@@ -1,5 +1,6 @@
 package com.example.springharness.controller;
 
+import com.example.springharness.util.ErrorSanitizer;
 import com.example.springharness.agent.ReActAgentService;
 import com.example.springharness.dto.AgentResponse;
 import com.example.springharness.service.MultiModelService;
@@ -161,7 +162,7 @@ public class AgentController {
                 if (!completed.get()) {
                     try {
                         emitter.send(SseEmitter.event().data(
-                                objectMapper.writeValueAsString(Map.of("type", "error", "content", e.getMessage()))
+                                objectMapper.writeValueAsString(Map.of("type", "error", "content", ErrorSanitizer.sanitize(e)))
                         ));
                         emitter.completeWithError(e);
                     } catch (IOException | IllegalStateException ignored) {}

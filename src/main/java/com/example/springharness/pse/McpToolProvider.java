@@ -1,5 +1,6 @@
 package com.example.springharness.pse;
 
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.tool.ToolCallback;
@@ -8,6 +9,10 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
@@ -49,6 +54,10 @@ public class McpToolProvider implements ToolProvider {
     @Value("${mcp.enabled:false}")
     private boolean mcpEnabled;
 
+    /** MCP 文件系统服务器允许访问的目录（默认隔离到 ./data/mcp-workspace/） */
+    @Value("${MCP_FS_DIR:./data/mcp-workspace/}")
+    private String mcpFsDir;
+
     /**
      * 使用 ObjectProvider 延迟注入，避免 MCP 未配置时启动失败。
      * 当 mcp.enabled=false 或未配置 MCP 服务器时，ToolCallbackProvider Bean 可能不存在。
@@ -57,6 +66,24 @@ public class McpToolProvider implements ToolProvider {
 
     public McpToolProvider(ObjectProvider<ToolCallbackProvider> mcpToolCallbackProvider) {
         this.mcpToolCallbackProvider = mcpToolCallbackProvider;
+    }
+
+    /**
+     * 启动时自动创建 MCP 工作目录，避免 MCP 文件系统服务器启动失败。
+     */
+    @PostConstruct
+    public void init() {
+        if (mcpFsDir != null && !mcpFsDir.isBlank()) {
+            try {
+                Path dir = Paths.get(mcpFsDir).toAbsolutePath().normalize();
+                if (!Files.exists(dir)) {
+                    Files.createDirectories(dir);
+                    log.info("MCP 工作目录已创建: {}", dir);
+                }
+            } catch (IOException e) {
+                log.warn("MCP 工作目录创建失败: {}，请手动创建或检查权限", mcpFsDir, e);
+            }
+        }
     }
 
     @Override

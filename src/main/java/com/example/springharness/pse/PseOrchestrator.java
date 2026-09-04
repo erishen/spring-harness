@@ -1,5 +1,6 @@
 package com.example.springharness.pse;
 
+import com.example.springharness.util.ErrorSanitizer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -350,12 +351,13 @@ public class PseOrchestrator {
 
         } catch (Exception e) {
             log.error("PSE 执行失败", e);
+            String safeMsg = ErrorSanitizer.sanitize(e);
             PseStep errorStep = PseStep.create(++seq, "system", "error",
-                    "执行异常", e.getMessage(), null);
+                    "执行异常", safeMsg, null);
             steps.add(errorStep);
             callback.accept(new PseStreamEvent("step", seq, errorStep, null));
-            callback.accept(new PseStreamEvent("error", seq, null, e.getMessage()));
-            return PseResult.failed("PSE 执行异常：" + e.getMessage(), steps, new ArrayList<>(),
+            callback.accept(new PseStreamEvent("error", seq, null, safeMsg));
+            return PseResult.failed("PSE 执行异常：" + safeMsg, steps, new ArrayList<>(),
                     System.currentTimeMillis() - startTime, currentTracker().getTotal(), currentTracker().getCallCount());
         } finally {
             executor.shutdownNow();

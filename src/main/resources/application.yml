@@ -44,11 +44,12 @@ spring:
           connections:
             # 文件系统 MCP：允许 Agent 读取/写入指定目录的文件
             # 需先全局安装：npm i -g @modelcontextprotocol/server-filesystem
-            # 路径全部走环境变量，默认值基于项目根（JVM user.dir），换机器无需改 yml
+            # 路径全部走环境变量，默认隔离到 ./data/mcp-workspace/（避免访问 .env、源码等敏感文件）
+            # 换机器无需改 yml；如需访问项目目录请在 .env 中显式配置 MCP_FS_DIR
             filesystem:
               command: "${MCP_FS_COMMAND:${user.home}/.npm-global/bin/mcp-server-filesystem}"
               args:
-                - "${MCP_FS_DIR:./}"
+                - "${MCP_FS_DIR:./data/mcp-workspace/}"
             # 投资数据体检 MCP：weekly-investment 技能前置，刷新 asset-lens 快照并扫描异常（只读）
             # 桥接 resolve-skills/weekly-investment 脚本 → autogen-pse / asset-lens 数据管线
             portfolio-check:

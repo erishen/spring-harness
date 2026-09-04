@@ -273,6 +273,8 @@ onUnmounted(() => {
 
 <style scoped>
 .longtask-panel {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   height: 100%;

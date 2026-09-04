@@ -14,6 +14,7 @@
 - **Docker 代码沙箱**：隔离执行 **8 种语言**（python / javascript / shell / java / go / rust / c / cpp）
 - **长时任务**：SQLite 持久化，token 消耗统计、执行日志、可中断可续跑
 - **长期记忆（Memory）**：自动从对话抽取用户偏好/事实/目标 → 存 SQLite → 跨会话注入各模式 System prompt（方案 B 会话窗口记忆可选）
+- **动态示例任务**：输入框 / 长时任务的示例问题按「当前模式 + 环境能力（本地工具 / MCP / 沙箱语言 / 知识库 / 记忆 / Skills）」实时生成，可一键刷新
 - **Agnes 模型接入**：免费额度，自动限流（可切换 DeepSeek / DashScope 多模型）
 
 ## 技术栈
@@ -131,6 +132,7 @@ curl -N "http://localhost:8080/chat/stream?message=讲一个程序员笑话"
 | POST | `/api/memory/toggle` | 开启/关闭记忆 `{"enabled": true}` |
 | POST | `/api/memory/clear` | 清空全部记忆 |
 | DELETE | `/api/memory/{id}` | 删除单条记忆 |
+| GET | `/api/examples?mode=chat\|agent\|pse\|rag\|longtask` | 按模式 + 当前环境能力动态生成示例任务 |
 
 ### 长期记忆（Memory）
 

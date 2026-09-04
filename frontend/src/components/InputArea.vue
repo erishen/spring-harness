@@ -1,6 +1,6 @@
 <template>
   <div class="input-wrapper">
-    <!-- 示例问题 -->
+    <!-- 示例问题（按模式 + 当前环境能力动态生成，可刷新） -->
     <div class="examples-bar" v-if="examples.length">
       <span class="examples-label">试试：</span>
       <div class="examples-list">
@@ -8,12 +8,15 @@
           v-for="(ex, i) in examples"
           :key="i"
           class="example-chip"
-          @click="applyExample(ex)"
-          :title="ex"
+          @click="applyExample(ex.title)"
+          :title="ex.tags && ex.tags.length ? `${ex.title}\n依赖: ${ex.tags.join(', ')}` : ex.title"
         >
-          {{ ex }}
+          {{ ex.title }}
         </button>
       </div>
+      <button class="refresh-btn" @click="refresh" :disabled="loadingExamples" title="刷新示例问题">
+        <span :class="{ spinning: loadingExamples }">↻</span> 刷新
+      </button>
     </div>
 
     <div class="input-area">
@@ -38,7 +41,8 @@
 </template>
 
 <script setup>
-import { ref, nextTick, computed } from 'vue'
+import { ref, nextTick, watch } from 'vue'
+import { getExamples } from '../services/api.js'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -51,37 +55,26 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'send', 'stop'])
 
 const inputRef = ref(null)
+const examples = ref([])
+const loadingExamples = ref(false)
 
-// 各模式示例问题（组合工具展示）
-const EXAMPLES = {
-  chat: [
-    '用 Markdown 写 Spring AI 简介',
-    '解释 RAG 和微调的区别',
-    '写 Python 快速排序代码'
-  ],
-  agent: [
-    '用Python算斐波那契第20项',
-    '用Java写冒泡排序并输出',
-    '用Go写快速排序并输出',
-    '用Rust算斐波那契第25项',
-    '用C列出1到100的素数',
-    '用C++反转排序一个数组',
-    '查 AAPL 股价算买100股',
-    '现在几点？算 123×456'
-  ],
-  pse: [
-    '查 AAPL/MSFT/TSLA 股价，算哪个涨幅最大',
-    '买100股 MSFT 要多少钱',
-    '查时间规划今天学习计划'
-  ],
-  rag: [
-    'Spring AI 支持哪些向量库',
-    '如何配置 DashScope 模型',
-    '文档提到哪些功能特性'
-  ]
+// 模式 → 后端示例接口参数
+const MODE_PARAM = { chat: 'chat', agent: 'agent', pse: 'pse', rag: 'rag', task: 'longtask' }
+
+async function refresh() {
+  loadingExamples.value = true
+  try {
+    const data = await getExamples(MODE_PARAM[props.mode] || 'chat')
+    examples.value = data.examples || []
+  } catch (e) {
+    examples.value = []
+    console.error('加载示例问题失败:', e)
+  } finally {
+    loadingExamples.value = false
+  }
 }
 
-const examples = computed(() => EXAMPLES[props.mode] || [])
+watch(() => props.mode, () => refresh(), { immediate: true })
 
 function applyExample(text) {
   emit('update:modelValue', text)
@@ -168,6 +161,35 @@ defineExpose({
 }
 .example-chip:active {
   transform: scale(0.97);
+}
+.refresh-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: #4a6cf7;
+  background: transparent;
+  border: 1px dashed #c7d2fe;
+  border-radius: 16px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.refresh-btn:hover:not(:disabled) {
+  background: #eef2ff;
+  border-color: #4a6cf7;
+}
+.refresh-btn:disabled {
+  color: #9ca3af;
+  border-color: #e5e7eb;
+  cursor: not-allowed;
+}
+.refresh-btn .spinning {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
 }
 
 /* 输入区域 */

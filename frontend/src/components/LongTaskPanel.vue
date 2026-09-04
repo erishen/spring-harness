@@ -22,16 +22,19 @@
       ></textarea>
     </div>
 
-    <!-- 示例任务：快速验证各类能力 -->
-    <div class="task-examples">
+    <!-- 示例任务：根据当前环境能力动态生成，可刷新 -->
+    <div class="task-examples" v-if="examples.length">
       <div class="task-examples-header">
         <span class="task-examples-title">✨ 示例任务</span>
-        <span class="task-examples-hint">点击预填 · 覆盖本地工具 / Skills / MCP</span>
+        <span class="task-examples-hint">点击预填 · 覆盖本地工具 / Skills / MCP / 代码沙箱</span>
+        <button class="ex-refresh-btn" @click="loadExamples" :disabled="loadingExamples" title="根据当前环境能力刷新示例任务">
+          <span :class="{ spinning: loadingExamples }">↻</span> 刷新
+        </button>
       </div>
       <div class="task-example-item" v-for="ex in examples" :key="ex.title" @click="fillExample(ex)">
         <span class="ex-type" :class="ex.type">{{ ex.typeLabel }}</span>
         <span class="ex-text">{{ ex.title }}</span>
-        <span class="ex-tags">{{ ex.tags.join(' · ') }}</span>
+        <span class="ex-tags">{{ (ex.tags || []).join(' · ') }}</span>
       </div>
     </div>
 
@@ -172,6 +175,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { renderMarkdown, enhanceCodeBlocks } from '../utils/markdown'
+import { getExamples } from '../services/api.js'
 
 const tasks = ref([])
 const taskType = ref('pse')
@@ -183,51 +187,28 @@ const logOpenId = ref('')
 const copyDone = ref('')
 let timer = null
 
-// 示例任务：覆盖本地工具 / Skills / MCP 三类能力
-const examples = [
-  {
-    type: 'pse',
-    typeLabel: 'PSE',
-    title: '查询 AAPL、TSLA、MSFT 三只股票实时行情，算买100股各需多少人民币并比较今日涨幅',
-    tags: ['query_stock', 'query_exchange_rate', 'calculator'],
-  },
-  {
-    type: 'agent',
-    typeLabel: 'ReAct',
-    title: '现在几点？算 123×456，查美元兑人民币汇率，再用代码沙箱计算斐波那契第20项',
-    tags: ['get_datetime', 'calculator', 'query_exchange_rate', 'execute_code'],
-  },
-  {
-    type: 'pse',
-    typeLabel: 'PSE',
-    title: '生成一份本周投资组合周报（调用投资周报技能）',
-    tags: ['skill_run → weekly-investment'],
-  },
-  {
-    type: 'agent',
-    typeLabel: 'ReAct',
-    title: '用代码审查技能审查 ReActAgentService.java，输出结构化审查报告',
-    tags: ['skill_run → code-review'],
-  },
-  {
-    type: 'agent',
-    typeLabel: 'ReAct',
-    title: '列出项目目录结构，读取 README.md 并总结项目要点',
-    tags: ['MCP list_directory', 'MCP read_file'],
-  },
-  {
-    type: 'agent',
-    typeLabel: 'ReAct',
-    title: '用 Go 并发筛出 1~1000000 的全部素数，统计个数与耗时（计算密集型，需数秒~数十秒）',
-    tags: ['execute_code → go'],
-  },
-  {
-    type: 'agent',
-    typeLabel: 'ReAct',
-    title: '用 Java 生成 10 万条随机整数并排序，输出最大的 10 个数与耗时',
-    tags: ['execute_code → java'],
-  },
-]
+// 示例任务：根据当前环境能力（本地工具 / Skills / MCP / 代码沙箱 / 记忆 / 知识库）动态生成
+const examples = ref([])
+const loadingExamples = ref(false)
+
+async function loadExamples() {
+  loadingExamples.value = true
+  try {
+    const data = await getExamples('longtask')
+    examples.value = (data.examples || []).map(e => ({
+      type: e.type,
+      typeLabel: e.typeLabel || (e.type === 'pse' ? 'PSE' : 'ReAct'),
+      title: e.title,
+      tags: e.tags || []
+    }))
+  } catch (err) {
+    console.error('加载示例任务失败:', err)
+    examples.value = []
+  } finally {
+    loadingExamples.value = false
+  }
+}
+onMounted(loadExamples)
 
 async function fillExample(ex) {
   taskType.value = ex.type
@@ -539,8 +520,40 @@ onUnmounted(() => {
 .task-examples-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   margin-bottom: 8px;
+}
+.ex-refresh-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: 12px;
+  color: #4a6cf7;
+  background: transparent;
+  border: 1px dashed #c7d2fe;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.ex-refresh-btn:hover:not(:disabled) {
+  background: #eef2ff;
+  border-color: #4a6cf7;
+}
+.ex-refresh-btn:disabled {
+  color: #9ca3b8;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+}
+.ex-refresh-btn .spinning {
+  display: inline-block;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 .task-examples-title { font-size: 13px; font-weight: 600; color: #334155; }
 .task-examples-hint { font-size: 11px; color: #94a3b8; }

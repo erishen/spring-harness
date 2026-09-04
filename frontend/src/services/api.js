@@ -178,6 +178,12 @@ export async function getSkills() {
 // ==================== 长期记忆 API ====================
 
 /** 获取记忆列表与状态 */
+/** 获取示例任务（根据当前环境能力 + 模式动态生成） */
+export async function getExamples(mode) {
+  const res = await request('/api/examples' + buildQuery({ mode }))
+  return res.json()
+}
+
 export async function getMemory() {
   const res = await request('/api/memory')
   return res.json()
@@ -263,6 +269,7 @@ export default {
   getMcpStatus,
   getSandboxStatus,
   getSkills,
+  getExamples,
   getMemory,
   toggleMemory,
   clearMemory,

@@ -39,21 +39,24 @@ jobs:
   frontend-build:
     name: Frontend Build
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Node 20
+      - name: Set up Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install dependencies
-        run: cd frontend && if [ -f package-lock.json ]; then npm ci; else npm install; fi
+        run: if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
       - name: Build
-        run: cd frontend && npm run build
+        run: npm run build
 
       - name: Upload dist
         uses: actions/upload-artifact@v4

@@ -107,11 +107,12 @@
                 <span class="step-seq">{{ si + 1 }}</span>
                 <span class="step-type">{{ step.type || step.step?.role || 'step' }}</span>
                 <span class="step-title">{{ step.step?.title || step.step?.action || '' }}</span>
-                <!-- answer 步骤是 LLM 最终回答（Markdown），渲染展示；其余过程步骤保持原样 pre -->
-                <div v-if="step.content && isAnswerStep(step)" class="step-md task-result-content" v-html="renderMarkdown(step.content)"></div>
-                <pre v-else-if="step.content" class="step-content">{{ step.content }}</pre>
-                <div v-if="step.step?.content && step.step.content !== step.content && isAnswerStep(step)" class="step-md task-result-content" v-html="renderMarkdown(step.step.content)"></div>
-                <pre v-else-if="step.step?.content && step.step.content !== step.content" class="step-content">{{ step.step.content }}</pre>
+                <!-- answer 步骤是 LLM 最终回答（Markdown）：若与最终结果相同则只在过程中给简洁提示，避免重复展示 -->
+                <div v-if="step.content && isAnswerStep(step) && !isDupAnswer(step, task)" class="step-md task-result-content" v-html="renderMarkdown(step.content)"></div>
+                <pre v-else-if="step.content && !(isAnswerStep(step) && isDupAnswer(step, task))" class="step-content">{{ step.content }}</pre>
+                <div v-if="step.step?.content && step.step.content !== step.content && isAnswerStep(step) && !isDupAnswer(step, task)" class="step-md task-result-content" v-html="renderMarkdown(step.step.content)"></div>
+                <pre v-else-if="step.step?.content && step.step.content !== step.content && !(isAnswerStep(step) && isDupAnswer(step, task))" class="step-content">{{ step.step.content }}</pre>
+                <div v-if="isAnswerStep(step) && isDupAnswer(step, task)" class="step-done-hint">✓ 生成最终回答（完整内容见下方结果）</div>
                 <!-- tool_call：只显示入参（execute_code 单独展示代码，还原换行） -->
                 <div v-if="step.toolCall && step.type === 'tool_call'" class="step-tool">
                   <span class="tool-name">{{ step.toolCall.name }}</span>
@@ -283,6 +284,14 @@ async function fetchTasks() {
 // 判断步骤是否为 LLM 最终回答（Markdown），需要渲染展示
 function isAnswerStep(step) {
   return step?.type === 'answer' || step?.step?.role === 'answer'
+}
+
+// answer 步骤 content 与任务最终 result 相同 → 视为重复，过程中不重复渲染
+function isDupAnswer(step, task) {
+  if (!isAnswerStep(step)) return false
+  const a = (step.content || step.step?.content || '').trim()
+  const r = (task.result || '').trim()
+  return a !== '' && a === r
 }
 
 // 尝试 JSON 美化（2 空格缩进），失败原样返回
@@ -945,6 +954,15 @@ onUnmounted(() => {
   background: #f8fafc;
   border-radius: 4px;
   padding: 4px 6px;
+}
+.step-done-hint {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #6b7280;
+  background: #f9fafb;
+  border: 1px dashed #e5e7eb;
+  border-radius: 4px;
+  padding: 3px 8px;
 }
 .step-tool {
   width: 100%;

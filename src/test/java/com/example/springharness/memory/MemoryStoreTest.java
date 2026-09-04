@@ -22,7 +22,8 @@ class MemoryStoreTest {
 
     @BeforeEach
     void setUp() {
-        store = new MemoryStore(tempDir.resolve("mem-" + UUID.randomUUID() + ".db").toString());
+        // 测试中关闭加密，保持原有测试逻辑
+        store = new MemoryStore(tempDir.resolve("mem-" + UUID.randomUUID() + ".db").toString(), false, "");
         store.init();
     }
 

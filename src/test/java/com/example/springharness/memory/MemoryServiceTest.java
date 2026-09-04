@@ -24,7 +24,8 @@ class MemoryServiceTest {
 
     @BeforeEach
     void setUp() {
-        store = new MemoryStore(tempDir.resolve("svc-" + UUID.randomUUID() + ".db").toString());
+        // 测试中关闭加密，保持原有测试逻辑
+        store = new MemoryStore(tempDir.resolve("svc-" + UUID.randomUUID() + ".db").toString(), false, "");
         store.init();
         service = new MemoryService(store, null); // extractor 仅抽取用，本测试不触发
         ReflectionTestUtils.setField(service, "enabled", true);

@@ -464,13 +464,16 @@ curl "http://localhost:8080/chat/rag?message=文档中提到了哪些向量数�
 
 ## 下一步可扩展
 
-- 聊天记忆（`ChatMemory` / 向量库）
-- 多轮对话（`Advisor` + Message History）
-- RAG（`VectorStore` + `QuestionAnswerAdvisor`，支持 PGVector / Redis / Milvus 等 25+ 向量库）
-- 结构化输出（Bean 输出 / JSON Schema 约束）
-- Agent Framework（Spring AI Alibaba `ReactAgent` + Graph 运行时，多 Agent 编排）
-- MCP 集成（Spring AI 1.1 原生支持 Model Context Protocol，可封装工具为 MCP Server）
-- 多模态（图片理解 `qwen-vl`、语音识别/合成）
-- CSRF 防护与全局速率限制（已记录在 TODO.md）
-- 所有工具调用和 API 访问的审计日志
-- 前端聊天历史 localStorage 加密
+> 已实现功能：聊天记忆（Memory）、多轮对话、RAG 知识库、ReAct Agent、PSE 协作、MCP 集成、Docker 代码沙箱、长时任务、动态示例任务、Agnes 模型接入、上下文防护、隐私合规（XSS/Actuator/MCP 脱敏）。
+
+- **结构化输出**：LLM 响应的 Bean 输出 / JSON Schema 约束
+- **多模态**：图片理解（`qwen-vl`）、语音识别/合成
+- **生产级向量库**：从 SimpleVectorStore 切换到 Redis / PGVector / Milvus（Spring AI 支持 25+ 向量库）
+- **Spring AI Alibaba ReactAgent + Graph 运行时**：原生多 Agent 编排框架（当前使用自定义 ReAct + PSE 实现）
+- **MCP Server**：将本地工具封装为 MCP Server 供外部消费
+- **CSRF 防护与全局速率限制**：已记录在 TODO.md（中优先级）
+- **审计日志**：所有工具调用和 API 访问的审计追踪（已记录在 TODO.md，低优先级）
+- **前端 localStorage 加密**：加密浏览器 localStorage 中存储的聊天历史（已记录在 TODO.md，低优先级）
+- **用户认证与多租户**：登录、用户隔离、基于角色的访问控制
+- **插件系统**：无需改代码即可热插拔工具/技能
+- **流式任务输出**：长时任务执行的实时流式输出（当前为轮询模式）

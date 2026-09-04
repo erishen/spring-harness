@@ -464,13 +464,16 @@ Models switched through `.env`'s `DASHSCOPE_MODEL` / Agnes configuration. Full l
 
 ## Next Steps for Extension
 
-- Chat memory (`ChatMemory` / vector store)
-- Multi-turn conversation (`Advisor` + Message History)
-- RAG (`VectorStore` + `QuestionAnswerAdvisor`, supports PGVector / Redis / Milvus and 25+ other vector stores)
-- Structured output (Bean output / JSON Schema constraints)
-- Agent Framework (Spring AI Alibaba `ReactAgent` + Graph runtime, multi-Agent orchestration)
-- MCP integration (Spring AI 1.1 natively supports Model Context Protocol, can encapsulate tools as MCP Server)
-- Multimodal (image understanding `qwen-vl`, speech recognition/synthesis)
-- CSRF protection & global rate limiting (recorded in TODO.md)
-- Audit logs for all tool calls and API access
-- Frontend localStorage encryption for chat history
+> Features already implemented: Chat memory (Memory), multi-turn conversation, RAG knowledge base, ReAct Agent, PSE collaboration, MCP integration, Docker code sandbox, long-running tasks, dynamic example tasks, Agnes model integration, context protection, privacy & compliance (XSS/Actuator/MCP sanitization).
+
+- **Structured output**: Bean output / JSON Schema constraints for LLM responses
+- **Multimodal**: Image understanding (`qwen-vl`), speech recognition/synthesis
+- **Production-grade vector store**: Switch from SimpleVectorStore to Redis / PGVector / Milvus (25+ vector stores supported by Spring AI)
+- **Spring AI Alibaba ReactAgent + Graph runtime**: Native multi-Agent orchestration framework (currently using custom ReAct + PSE implementation)
+- **MCP Server**: Encapsulate local tools as MCP Server for external consumption
+- **CSRF protection & global rate limiting**: Recorded in TODO.md (medium priority)
+- **Audit logs**: Audit trail for all tool calls and API access (recorded in TODO.md, low priority)
+- **Frontend localStorage encryption**: Encrypt chat history stored in browser localStorage (recorded in TODO.md, low priority)
+- **User authentication & multi-tenant**: Login, user isolation, role-based access control
+- **Plugin system**: Hot-pluggable tools/skills without code changes
+- **Streaming task output**: Real-time streaming for long-running task execution (currently polling-based)

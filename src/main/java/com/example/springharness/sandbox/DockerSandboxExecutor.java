@@ -52,9 +52,9 @@ public class DockerSandboxExecutor {
             "shell", "alpine:3.19",
             "java", "eclipse-temurin:17-jdk",
             "go", "golang:1.22-alpine",
-            "rust", "rust:1.75-slim",
-            "c", "gcc:13",
-            "cpp", "gcc:13"
+            "rust", "rust:1.75-alpine",
+            "c", "sandbox-gcc:alpine",
+            "cpp", "sandbox-gcc:alpine"
     );
 
     /** 语言 -> 执行命令映射（经 sh -c 执行，支持 && 等 shell 操作符） */

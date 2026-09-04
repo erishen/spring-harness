@@ -23,12 +23,11 @@
             <span class="step-type">{{ step.type || step.step?.role || 'step' }}</span>
             <span class="step-title">{{ step.step?.title || step.step?.action || '' }}</span>
 
-            <!-- answer 步骤：LLM 最终回答（Markdown），与最终结果相同则简洁提示 -->
-            <div v-if="step.content && isAnswerStep(step) && !isDupAnswer(step)" class="step-md task-result-content" v-html="renderMarkdown(step.content)"></div>
-            <pre v-else-if="step.content && !(isAnswerStep(step) && isDupAnswer(step))" class="step-content">{{ step.content }}</pre>
-            <div v-if="step.step?.content && step.step.content !== step.content && isAnswerStep(step) && !isDupAnswer(step)" class="step-md task-result-content" v-html="renderMarkdown(step.step.content)"></div>
-            <pre v-else-if="step.step?.content && step.step.content !== step.content && !(isAnswerStep(step) && isDupAnswer(step))" class="step-content">{{ step.step.content }}</pre>
+            <!-- 步骤内容：所有步骤都用 Markdown 渲染（除工具调用的入参/结果外） -->
+            <!-- answer 步骤与最终结果重复时显示简洁提示 -->
             <div v-if="isAnswerStep(step) && isDupAnswer(step)" class="step-done-hint">✓ 生成最终回答（完整内容见下方结果）</div>
+            <div v-else-if="step.content" class="step-md" v-html="renderMarkdown(step.content)"></div>
+            <div v-if="step.step?.content && step.step.content !== step.content && !(isAnswerStep(step) && isDupAnswer(step))" class="step-md" v-html="renderMarkdown(step.step.content)"></div>
 
             <!-- tool_call -->
             <div v-if="step.toolCall && step.type === 'tool_call'" class="step-tool">
@@ -227,22 +226,16 @@ function stderrOf(output) {
   color: #374151;
   font-weight: 500;
 }
-.step-content {
-  width: 100%;
-  margin: 2px 0 0;
-  font-size: 11px;
-  color: #4b5563;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-family: 'SF Mono', Monaco, monospace;
-  line-height: 1.4;
-}
 .step-md {
   width: 100%;
-  margin: 2px 0 0;
+  margin: 4px 0 2px;
+  padding: 8px 10px;
+  background: #f9fafb;
+  border: 1px solid #eef0f3;
+  border-radius: 4px;
   font-size: 12px;
   color: #374151;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 .step-done-hint {
   width: 100%;

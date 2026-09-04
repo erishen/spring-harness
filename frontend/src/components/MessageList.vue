@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, onMounted } from 'vue'
+import { ref, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import MessageItem from './MessageItem.vue'
 
 const props = defineProps({
@@ -21,6 +21,7 @@ const props = defineProps({
 defineEmits(['regenerate'])
 
 const chatContainer = ref(null)
+let resizeObserver = null
 
 /** 判断是否是最后一条 AI 消息（用于显示重新生成按钮） */
 function isLastAiMessage(index) {
@@ -43,7 +44,9 @@ function scrollToBottom(immediate = false) {
         chatContainer.value.scrollTop = chatContainer.value.scrollHeight
         // 恢复平滑滚动
         requestAnimationFrame(() => {
-          chatContainer.value.style.scrollBehavior = prevBehavior
+          if (chatContainer.value) {
+            chatContainer.value.style.scrollBehavior = prevBehavior
+          }
         })
       } else {
         chatContainer.value.scrollTop = chatContainer.value.scrollHeight
@@ -72,6 +75,29 @@ onMounted(() => {
   requestAnimationFrame(() => {
     requestAnimationFrame(() => scrollToBottom(true))
   })
+
+  // 监听容器高度变化（底部示例问题异步加载、输入框高度变化等），
+  // 高度变化时重新滚动到底部，避免最新消息被底部元素遮挡
+  if (chatContainer.value && typeof ResizeObserver !== 'undefined') {
+    resizeObserver = new ResizeObserver(() => {
+      // 只有当前滚动位置接近底部时才自动跟随，避免用户向上翻看时被强制拉回
+      const el = chatContainer.value
+      if (el) {
+        const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+        if (distanceFromBottom < 100) {
+          scrollToBottom(true)
+        }
+      }
+    })
+    resizeObserver.observe(chatContainer.value)
+  }
+})
+
+onBeforeUnmount(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
 })
 
 defineExpose({ scrollToBottom })

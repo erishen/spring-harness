@@ -345,6 +345,7 @@ onBeforeUnmount(() => {
   display: inline-flex; align-items: center; padding: 3px 8px;
   background: #f3f4f6; border-radius: 4px; cursor: help;
   transition: all 0.15s; border: 1px solid transparent;
+  max-width: 100%;
 }
 .tool-chip:hover { background: #eff6ff; border-color: #bfdbfe; }
 .tool-chip.mcp { background: #ecfdf5; }
@@ -352,6 +353,8 @@ onBeforeUnmount(() => {
 .tool-chip-name {
   font-size: 10px; font-family: 'SF Mono', Monaco, monospace;
   color: #374151; font-weight: 500;
+  word-break: break-all;
+  line-height: 1.3;
 }
 
 /* MCP 服务器块 */

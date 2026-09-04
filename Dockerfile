@@ -24,8 +24,9 @@ COPY src/ ./src/
 COPY --from=frontend /app/frontend/dist ./src/main/resources/static/
 RUN mvn -q package -DskipTests -B
 
-# ===== 阶段 3：运行时 =====
-FROM eclipse-temurin:17-jre-alpine
+# ===== 阶段 3：运行时（alpine + JDK17 + node + docker CLI）=====
+# 注：eclipse-temurin 无 arm64 alpine 变体，用 amazoncorretto:17-alpine（支持 amd64/arm64）
+FROM amazoncorretto:17-alpine
 
 # MCP 依赖 node；代码沙箱依赖 docker CLI（通过挂载宿主机 docker.sock 调用）
 RUN apk add --no-cache nodejs npm docker \

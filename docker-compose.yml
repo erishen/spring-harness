@@ -22,6 +22,9 @@ services:
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-qwen3.7-text-embedding}
       - RERANK_MODEL=${RERANK_MODEL:-qwen3.7-text-rerank}
       # ===== MCP =====
+      # 容器内默认禁用 MCP 客户端（无 resolve-skills 脚本会导致启动超时）；
+      # 如需启用请挂载 resolve-skills 卷并设 MCP_CLIENT_ENABLED=true
+      - SPRING_AI_MCP_CLIENT_ENABLED=${MCP_CLIENT_ENABLED:-false}
       - MCP_ENABLED=${MCP_ENABLED:-true}
       - MCP_FS_DIR=/workspace
       - RESOLVE_SKILLS_DIR=${RESOLVE_SKILLS_DIR:-/workspace/resolve-skills}

@@ -340,17 +340,27 @@ onBeforeUnmount(() => {
 .group-count { margin-left: auto; font-size: 10px; color: #9ca3af; font-weight: 500; }
 
 /* 工具网格 */
-.tool-grid { display: flex; flex-wrap: wrap; gap: 5px; }
+.tool-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.tool-grid::-webkit-scrollbar { width: 4px; }
+.tool-grid::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
+.tool-grid::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
 .tool-chip {
-  display: inline-flex; align-items: center; padding: 4px 10px;
-  background: #f3f4f6; border-radius: 5px; cursor: help;
+  display: inline-flex; align-items: center; padding: 5px 12px;
+  background: #f3f4f6; border-radius: 6px; cursor: help;
   transition: all 0.15s; border: 1px solid transparent;
 }
 .tool-chip:hover { background: #eff6ff; border-color: #bfdbfe; }
 .tool-chip.mcp { background: #ecfdf5; }
 .tool-chip.mcp:hover { background: #d1fae5; border-color: #6ee7b7; }
 .tool-chip-name {
-  font-size: 11px; font-family: 'SF Mono', Monaco, monospace;
+  font-size: 12px; font-family: 'SF Mono', Monaco, monospace;
   color: #374151; font-weight: 500;
 }
 

@@ -73,6 +73,14 @@
           {{ copied ? '已复制 ✓' : (msg.error && msg.pseSteps ? '复制错误报告' : '复制') }}
         </button>
         <button
+          v-if="msg.role === 'ai'"
+          class="msg-action-btn"
+          @click="openFullscreen"
+          title="全屏查看"
+        >
+          ⛶ 全屏
+        </button>
+        <button
           v-if="msg.role === 'ai' && isLastAi"
           class="msg-action-btn regenerate-btn"
           @click="$emit('regenerate')"
@@ -104,11 +112,29 @@
       </div>
     </div>
   </div>
+
+  <!-- 全屏查看浮层 -->
+  <div v-if="fullscreen" class="fullscreen-overlay" @click.self="closeFullscreen">
+    <div class="fullscreen-panel">
+      <div class="fullscreen-header">
+        <span class="fullscreen-title">📄 回答全文</span>
+        <div class="fullscreen-actions">
+          <button class="fullscreen-btn" @click="copyFullscreenContent" :title="'复制全文'">
+            {{ fullscreenCopied ? '✓ 已复制' : '📋 复制' }}
+          </button>
+          <button class="fullscreen-btn close" @click="closeFullscreen" title="关闭 (ESC)">
+            ✕ 关闭
+          </button>
+        </div>
+      </div>
+      <div ref="fullscreenContentRef" class="fullscreen-content md-content" v-html="renderMarkdown(msg.content)"></div>
+    </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
-import { renderMarkdown } from '../utils/markdown.js'
+import { renderMarkdown, enhanceCodeBlocks } from '../utils/markdown.js'
 import { roleDisplayName, buildErrorReport, copyToClipboard } from '../utils/format.js'
 import ToolCallCard from './ToolCallCard.vue'
 
@@ -121,6 +147,45 @@ defineEmits(['regenerate'])
 
 const bubbleRef = ref(null)
 const copied = ref(false)
+
+// ===== 全屏查看 =====
+const fullscreen = ref(false)
+const fullscreenCopied = ref(false)
+const fullscreenContentRef = ref(null)
+
+function openFullscreen() {
+  fullscreen.value = true
+  fullscreenCopied.value = false
+  // 渲染后增强代码块
+  nextTick(() => {
+    if (fullscreenContentRef.value) {
+      enhanceCodeBlocks(fullscreenContentRef.value)
+    }
+  })
+  // 监听 ESC 键
+  document.addEventListener('keydown', handleFullscreenEsc)
+  // 锁定背景滚动
+  document.body.style.overflow = 'hidden'
+}
+
+function closeFullscreen() {
+  fullscreen.value = false
+  document.removeEventListener('keydown', handleFullscreenEsc)
+  document.body.style.overflow = ''
+}
+
+function handleFullscreenEsc(e) {
+  if (e.key === 'Escape') closeFullscreen()
+}
+
+async function copyFullscreenContent() {
+  const text = props.msg.content || ''
+  const ok = await copyToClipboard(text)
+  if (ok) {
+    fullscreenCopied.value = true
+    setTimeout(() => { fullscreenCopied.value = false }, 1500)
+  }
+}
 
 // ===== 代码块复制按钮（仅作用于当前消息的 .bubble.md-content）=====
 let codeObserver = null
@@ -203,6 +268,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (codeRafId) cancelAnimationFrame(codeRafId)
   if (codeObserver) { codeObserver.disconnect(); codeObserver = null }
+  // 清理全屏相关
+  document.removeEventListener('keydown', handleFullscreenEsc)
+  document.body.style.overflow = ''
 })
 
 // 消息内容变化时重新添加代码块按钮
@@ -733,5 +801,95 @@ async function copyPseSteps() {
   font-size: 12.5px;
   line-height: 1.5;
   background: #f9fafb;
+}
+
+/* ===== 全屏查看浮层 ===== */
+.fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.fullscreen-panel {
+  width: 100%;
+  max-width: 900px;
+  height: 100%;
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.fullscreen-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  flex-shrink: 0;
+}
+.fullscreen-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1f2937;
+}
+.fullscreen-actions {
+  display: flex;
+  gap: 8px;
+}
+.fullscreen-btn {
+  padding: 6px 14px;
+  font-size: 12.5px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #4b5563;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.fullscreen-btn:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #f0f7ff;
+}
+.fullscreen-btn.close:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+.fullscreen-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 32px;
+  font-size: 14.5px;
+  line-height: 1.75;
+}
+.fullscreen-content::-webkit-scrollbar {
+  width: 8px;
+}
+.fullscreen-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+.fullscreen-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+/* 全屏内容中的代码块样式增强 */
+.fullscreen-content :deep(.code-block-wrapper) {
+  margin: 12px 0;
+  border-radius: 8px;
+}
+.fullscreen-content :deep(.code-block-wrapper pre) {
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.6;
 }
 </style>

@@ -351,7 +351,7 @@ curl "http://localhost:8080/chat/rag?message=What%20vector%20databases%20are%20m
 | Language | Image | Description |
 | --- | --- | --- |
 | python | python:3.11-slim | Interpreted execution |
-| javascript | node:20-slim | Interpreted execution |
+| javascript | node:22-slim | Interpreted execution |
 | shell | alpine:3.19 | Interpreted execution |
 | java | eclipse-temurin:17-jdk | `java Main.java` source mode |
 | go | golang:1.22-alpine | `go run` (cache redirected to /tmp) |

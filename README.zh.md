@@ -351,7 +351,7 @@ curl "http://localhost:8080/chat/rag?message=文档中提到了哪些向量数�
 | 语言 | 镜像 | 说明 |
 | --- | --- | --- |
 | python | python:3.11-slim | 解释执行 |
-| javascript | node:20-slim | 解释执行 |
+| javascript | node:22-slim | 解释执行 |
 | shell | alpine:3.19 | 解释执行 |
 | java | eclipse-temurin:17-jdk | `java Main.java` 源码模式 |
 | go | golang:1.22-alpine | `go run`（缓存重定向 /tmp） |

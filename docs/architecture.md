@@ -636,7 +636,7 @@ execute_code 工具调用
 | 语言 | 镜像 | 执行命令 | 说明 |
 |------|------|---------|------|
 | python | python:3.11-slim | python main.py | 解释执行 |
-| javascript | node:20-slim | node main.js | 解释执行 |
+| javascript | node:22-slim | node main.js | 解释执行 |
 | shell | alpine:3.19 | sh main.sh | 解释执行 |
 | java | eclipse-temurin:17-jdk | java Main.java | 源码模式 |
 | go | golang:1.22-alpine | go run main.go | 缓存重定向 /tmp |

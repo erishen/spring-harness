@@ -21,8 +21,8 @@ logs/
 *.sqlite
 *.sqlite3
 
-# 沙箱执行产物（代码沙箱临时文件）
-sandbox/
+# 沙箱执行产物（代码沙箱临时文件，仅根目录下的 sandbox/）
+/sandbox/
 
 # 缓存目录
 .cache/

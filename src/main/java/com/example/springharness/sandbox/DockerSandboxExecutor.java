@@ -48,7 +48,7 @@ public class DockerSandboxExecutor {
     /** 语言 -> Docker 镜像映射 */
     private static final java.util.Map<String, String> LANGUAGE_IMAGES = java.util.Map.of(
             "python", "python:3.11-slim",
-            "javascript", "node:20-slim",
+            "javascript", "node:22-slim",
             "shell", "alpine:3.19",
             "java", "eclipse-temurin:17-jdk",
             "go", "golang:1.22-alpine",

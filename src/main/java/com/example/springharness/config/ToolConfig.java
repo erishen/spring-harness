@@ -85,8 +85,8 @@ public class ToolConfig {
 
     @Bean
     public ToolCallback fileReadTool() {
-        return FunctionToolCallback.builder("read_file", new FileReadTool())
-                .description("读取本地文本文件内容。当需要审查代码、查看配置、分析文件内容、执行 code-review 等技能时使用。参数为文件路径（相对于项目根目录，如 src/main/java/com/example/MyClass.java）。安全限制：只能读取项目目录下的文本文件，不能读取 .env 等敏感文件，单文件最大 100KB。")
+        return FunctionToolCallback.builder("read_project_file", new FileReadTool())
+                .description("读取项目目录下的本地文本文件内容。当需要审查代码、查看配置、分析文件内容、执行 code-review 等技能时使用。参数为文件路径（相对于项目根目录，如 src/main/java/com/example/MyClass.java）。安全限制：只能读取项目目录下的文本文件，不能读取 .env 等敏感文件，单文件最大 100KB。注意：与 MCP 的 read_file 不同，此工具专门读取项目源代码文件。")
                 .inputType(FileReadTool.Request.class)
                 .build();
     }

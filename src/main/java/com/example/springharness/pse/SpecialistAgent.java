@@ -228,16 +228,24 @@ public class SpecialistAgent {
 
     /**
      * 聚合全部可用工具：本地工具（含 skills 的 skill_run）+ MCP 工具。
+     * 自动去重：本地工具优先，MCP 工具与本地重名时跳过。
      */
     private List<ToolCallback> getAllTools() {
-        List<ToolCallback> all = new ArrayList<>(toolCallbacks);
+        // 使用 LinkedHashMap 按工具名去重，保持插入顺序，本地工具优先
+        java.util.LinkedHashMap<String, ToolCallback> uniqueTools = new java.util.LinkedHashMap<>();
+        for (ToolCallback tool : toolCallbacks) {
+            uniqueTools.put(tool.getToolDefinition().name(), tool);
+        }
         if (mcpToolProvider != null && mcpToolProvider.isEnabled()) {
             List<ToolCallback> mcpTools = mcpToolProvider.getTools();
-            if (!mcpTools.isEmpty()) {
-                all.addAll(mcpTools);
+            for (ToolCallback tool : mcpTools) {
+                String name = tool.getToolDefinition().name();
+                if (!uniqueTools.containsKey(name)) {
+                    uniqueTools.put(name, tool);
+                }
             }
         }
-        return all;
+        return new ArrayList<>(uniqueTools.values());
     }
 
     /**

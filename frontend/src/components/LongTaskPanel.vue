@@ -185,39 +185,14 @@ const examples = [
   {
     type: 'agent',
     typeLabel: 'ReAct',
-    title: '在 data/ 目录创建 notes.md 写入一句总结，再读取确认文件内容',
-    tags: ['MCP write_file', 'MCP read_file'],
-  },
-  // ===== 代码沙箱多语言示例（java / go / rust / c / cpp）=====
-  {
-    type: 'agent',
-    typeLabel: 'ReAct',
-    title: '用 Java 沙箱写一个冒泡排序，排序 [5,3,8,1,9,2] 并输出结果',
-    tags: ['execute_code → java'],
-  },
-  {
-    type: 'agent',
-    typeLabel: 'ReAct',
-    title: '用 Go 沙箱写一个快速排序，对 [3,6,8,10,1,2,1,5] 排序并输出',
+    title: '用 Go 并发筛出 1~1000000 的全部素数，统计个数与耗时（计算密集型，需数秒~数十秒）',
     tags: ['execute_code → go'],
   },
   {
     type: 'agent',
     typeLabel: 'ReAct',
-    title: '用 Rust 沙箱写递归斐波那契，计算第 25 项并打印（注意用 u64 避免溢出）',
-    tags: ['execute_code → rust'],
-  },
-  {
-    type: 'agent',
-    typeLabel: 'ReAct',
-    title: '用 C 沙箱写一个素数判断程序，列出 1 到 100 的所有素数',
-    tags: ['execute_code → c'],
-  },
-  {
-    type: 'agent',
-    typeLabel: 'ReAct',
-    title: '用 C++ 沙箱写一个 vector 反转并排序，输出 [4,2,9,1,7] 处理后的结果',
-    tags: ['execute_code → cpp'],
+    title: '用 Java 生成 10 万条随机整数并排序，输出最大的 10 个数与耗时',
+    tags: ['execute_code → java'],
   },
 ]
 

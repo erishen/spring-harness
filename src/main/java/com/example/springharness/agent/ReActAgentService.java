@@ -242,7 +242,8 @@ public class ReActAgentService {
         for (ToolCallback callback : getAllTools()) {
             if (callback.getToolDefinition().name().equals(toolName)) {
                 try {
-                    return callback.call(toolInput);
+                    // 工具输出脱敏：过滤 API Key/token/secret 等敏感凭证，防止泄露到 LLM 上下文或持久化存储
+                    return ErrorSanitizer.sanitizeContent(callback.call(toolInput));
                 } catch (Exception e) {
                     return "工具执行失败: " + ErrorSanitizer.sanitize(e);
                 }

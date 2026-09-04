@@ -121,10 +121,13 @@ management:
   endpoints:
     web:
       exposure:
+        # 只暴露基本健康和指标端点，不暴露 env/beans/configprops 等敏感端点
         include: health,info,metrics,prometheus
   endpoint:
     health:
-      show-details: always
+      # 不显示健康检查详情（数据库连接、磁盘空间等可能泄露服务器配置）
+      # 如需调试可临时改为 when-authorized 或 always
+      show-details: never
   metrics:
     tags:
       application: spring-harness

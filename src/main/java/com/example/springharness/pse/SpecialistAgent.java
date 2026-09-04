@@ -2,6 +2,7 @@ package com.example.springharness.pse;
 
 import com.example.springharness.service.MultiModelService;
 import com.example.springharness.util.ContextGuard;
+import com.example.springharness.util.ErrorSanitizer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ai.chat.messages.*;
@@ -225,9 +226,10 @@ public class SpecialistAgent {
         for (ToolCallback callback : getAllTools()) {
             if (callback.getToolDefinition().name().equals(toolName)) {
                 try {
-                    return callback.call(toolInput);
+                    // 工具输出脱敏：过滤 API Key/token/secret 等敏感凭证，防止泄露到 LLM 上下文或持久化存储
+                    return ErrorSanitizer.sanitizeContent(callback.call(toolInput));
                 } catch (Exception e) {
-                    return "工具执行失败: " + e.getMessage();
+                    return "工具执行失败: " + ErrorSanitizer.sanitize(e);
                 }
             }
         }

@@ -87,6 +87,13 @@ mcp:
       type: stdio
       description: 深度投资周报（PSE 三角色流水线 + 个人知识库检索）
 
+# PSE 协作编排配置
+pse:
+  # 编排整体超时（秒）：pse-review 等长工具单次 2-6 分钟，需足够余量
+  timeout-seconds: ${PSE_TIMEOUT_SECONDS:90}
+  # 子任务是否并行执行
+  parallel-enabled: ${PSE_PARALLEL_ENABLED:true}
+
 server:
   port: ${SERVER_PORT:8080}
 

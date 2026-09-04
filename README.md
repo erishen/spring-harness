@@ -1,14 +1,19 @@
 # spring-harness
 
-基于 **Spring AI Alibaba**（阿里云百炼 / 通义千问 DashScope）的全栈 AI Agent 开发框架，集成 ReAct Agent、PSE 多 Agent 协作、RAG 知识库、MCP、Skills、Docker 代码沙箱等完整能力。国内直连，无需代理。
+基于 **Spring AI Alibaba**（阿里云百炼 / 通义千问 DashScope）的全栈 AI Agent 开发框架，国内直连、无需代理。
 
 ## 功能特性
 
-- **普通对话模式**：非流式 + SSE 流式输出
-- **Agent 模式**：LLM 自动识别意图并调用工具，返回最终回答 + 完整工具调用过程
-- **内置 3 个工具**：计算器、当前时间、股票行情（Alpha Vantage）
-- **RAG 知识库模式**：上传文档（PDF/TXT/MD 等）→ 自动切分向量化 → 基于知识库内容问答
-- **前端三模式切换**：Vue 3 聊天界面，可实时查看工具调用过程和文档管理
+- **五种交互模式**：普通对话 / RAG 知识库 / ReAct Agent / PSE 协作 / 长时任务
+- **ReAct Agent**：LLM 自动识别意图调用工具，SSE 流式输出，完整展示工具调用过程
+- **PSE 协作编排**：Planner → Specialist → Evaluator 三角色流水线，支持子任务并行、失败重试、整体评审
+- **RAG 知识库**：上传文档（PDF/TXT/MD/JSON/Java/Python 等）→ 切分向量化 → Rerank 精排检索，并接入 Agent / PSE / 长时任务
+- **本地工具 7 个**：计算器、当前时间、股票实时行情、汇率、代码沙箱、技能加载、知识库检索
+- **MCP 集成**：filesystem + portfolio-check + pse-review（投资数据管线）
+- **Skills**：可加载 resolve-skills 技能库（code-review、weekly-investment 等），对齐 Claude Code / Codex 开放标准
+- **Docker 代码沙箱**：隔离执行 **8 种语言**（python / javascript / shell / java / go / rust / c / cpp）
+- **长时任务**：SQLite 持久化，token 消耗统计、执行日志、可中断可续跑
+- **Agnes 模型接入**：免费额度，自动限流（可切换 DeepSeek / DashScope 多模型）
 
 ## 技术栈
 
@@ -33,32 +38,23 @@ spring-harness
 ├── pom.xml
 ├── frontend/             # 前端（Vite + Vue 3）
 │   ├── package.json
-│   ├── vite.config.js    # 开发代理：/chat → http://localhost:8080
+│   ├── vite.config.js    # 开发代理：/api、/chat 等 → http://localhost:8080
 │   ├── index.html
 │   └── src/
 │       ├── main.js
-│       ├── App.vue       # 聊天界面（普通对话/Agent/RAG 三模式切换）
-│       └── style.css
+│       ├── App.vue       # 五模式切换（对话/RAG/ReAct/PSE/长时任务）
+│       └── components/   # MessageList / InputArea / RuntimePanel / LongTaskPanel
 └── src/main/
-    ├── java/com/example/springaidemo/
-    │   ├── SpringHarnessApplication.java
-    │   ├── config/
-    │   │   └── ToolConfig.java        # 工具注册（FunctionToolCallback）
-    │   ├── controller/
-    │   │   ├── ChatController.java       # 普通对话（/chat, /chat/stream）
-    │   │   ├── AgentController.java      # Agent 模式（/chat/agent，工具调用）
-    │   │   ├── RagController.java        # RAG 文档管理（/rag/documents）
-    │   │   └── RagChatController.java    # RAG 增强对话（/chat/rag）
-    │   ├── dto/AgentResponse.java        # Agent 响应 DTO
-    │   ├── rag/
-    │   │   ├── RagConfig.java            # RAG 配置（VectorStore + TextSplitter）
-    │   │   ├── RagService.java           # RAG 服务（文档加载/切分/向量化/检索）
-    │   │   └── DocumentInfo.java         # 文档元信息 DTO
-    │   └── tool/
-    │       ├── ToolCallRecorder.java     # 工具调用记录器（ThreadLocal）
-    │       ├── CalculatorTool.java       # 计算器工具
-    │       ├── DateTimeTool.java         # 当前时间工具
-    │       └── StockTool.java            # 股票查询工具（Alpha Vantage）
+    ├── java/com/example/springharness/
+    │   ├── controller/   # Chat / Agent / Rag / Pse / LongTask / Tools / Models
+    │   ├── agent/        # ReActAgentService（ReAct 模式）
+    │   ├── pse/          # PSE 协作（Planner/Specialist/Evaluator/Orchestrator/Soul/TokenUsage）
+    │   ├── task/         # 长时任务（线程池 + SQLite）
+    │   ├── rag/          # RAG（向量库 + 切分 + Rerank）
+    │   ├── sandbox/      # DockerSandboxExecutor（8 语言沙箱）
+    │   ├── service/      # Prompt / MultiModel / Skill / AgnesRateLimiter
+    │   ├── tool/         # 7 个本地工具（calculator/query_stock/execute_code/skill_run/search_knowledge...）
+    │   └── config/       # ToolConfig（工具注册）
     └── resources/application.yml
 ```
 
@@ -154,13 +150,21 @@ curl "http://localhost:8080/chat/agent?message=123乘以456等于多少"
 
 ### 内置工具
 
+**本地工具 7 个**（Agent / PSE / 长时任务均可调用）：
+
 | 工具名 | 功能 | 触发示例 |
 | --- | --- | --- |
 | `calculator` | 加减乘除 | "123乘以456等于多少" |
 | `get_datetime` | 当前日期时间 | "现在几点了"、"今天星期几" |
 | `query_stock` | 股票实时行情 | "苹果股票多少钱"、"AAPL 股价" |
+| `query_exchange_rate` | 汇率换算 | "美元兑人民币汇率" |
+| `execute_code` | Docker 沙箱执行 8 种语言代码 | "用Python算斐波那契第20项" |
+| `skill_run` | 加载技能指令（code-review / weekly-investment 等） | "用代码审查技能审查XX.java" |
+| `search_knowledge` | RAG 知识库检索（Rerank 精排） | "文档中提到了哪些向量数据库" |
 
-> 股票查询需要配置 `ALPHAVANTAGE_API_KEY`（免费获取：https://www.alphavantage.co/support/#api-key）。未配置时 LLM 仍会调用工具，但工具会返回提示信息。
+**MCP 工具 16 个**：`filesystem`（14 个文件操作）+ `portfolio-check`（投资数据体检）+ `pse-review`（深度投资周报）。
+
+> 股票行情（Yahoo Finance / Finnhub 实时，带限流与重试）、汇率来自公开接口。敏感 API Key 一律放 `.env`（已 gitignore），勿写进对话或代码。
 
 ### 工具调用原理
 
@@ -195,23 +199,47 @@ curl "http://localhost:8080/chat/rag?message=文档中提到了哪些向量数�
 | 组件 | 实现 | 说明 |
 | --- | --- | --- |
 | 向量库 | `SimpleVectorStore` | 内存向量库，开发演示用；生产可切换 Redis/PGVector/Milvus |
-| Embedding | DashScope `text-embedding-v2` | 阿里云文本向量模型 |
-| 文本切分 | `TokenTextSplitter` | 按 token 数切分，默认约 800 token/chunk |
+| Embedding | DashScope `qwen3.7-text-embedding` | 100 万 Token 免费，1024 维 |
+| 重排序 | DashScope `qwen3.7-text-rerank` | RAG 检索后精排（有免费额度） |
+| 文本切分 | `ParagraphTextSplitter` / `MarkdownTextSplitter` / `TokenTextSplitter` | DOC/PDF 按段落、Markdown 按结构、其他按 token |
 | 检索增强 | `RetrievalAugmentationAdvisor` | Spring AI 1.1 RAG Advisor，自动检索+注入 Prompt |
 | 文档加载 | `PagePdfDocumentReader` + 纯文本读取 | PDF 按页读取，其他格式直接读取文本 |
 
-> **切换向量库**：仅需替换 `RagConfig` 中的 `VectorStore` Bean（如改为 RedisVectorStore），添加对应依赖和配置即可，RagService 和 Controller 无需改动。
+> **RAG 通用化**：`search_knowledge` 工具已注册到 Agent / PSE / 长时任务，三类模式都能检索知识库。切换向量库仅需替换 `RagConfig` 中的 `VectorStore` Bean，RagService 和 Controller 无需改动。
+
+## Docker 代码沙箱
+
+`execute_code` 工具在隔离的 Docker 容器中执行代码，支持 **8 种语言**：
+
+| 语言 | 镜像 | 说明 |
+| --- | --- | --- |
+| python | python:3.11-slim | 解释执行 |
+| javascript | node:20-slim | 解释执行 |
+| shell | alpine:3.19 | 解释执行 |
+| java | eclipse-temurin:17-jdk | `java Main.java` 源码模式 |
+| go | golang:1.22-alpine | `go run`（缓存重定向 /tmp） |
+| rust | rust:1.75-alpine | `rustc` 编译后运行 |
+| c / cpp | sandbox-gcc:alpine（自建） | `gcc` / `g++` 编译后运行 |
+
+**安全隔离**：每次执行独立容器（`--rm` 自动销毁）、`--network none` 禁用网络、`--read-only` 只读根文件系统（仅 /tmp 可写且可执行）、内存 512MB / 1 核 / 100 进程限制、超时自动 kill、输出 100KB 截断。
+
+沙箱开关在 `.env`：`SANDBOX_ENABLED=true`。c/cpp 使用自建镜像 `docker/sandbox-gcc.Dockerfile`（alpine + gcc/g++，209MB，musl libc 对标准程序完全兼容）。
+
+## PSE 协作与长时任务
+
+- **PSE 协作**：Planner 将任务分解为子任务 → Specialist 并行执行（可调用工具）→ Evaluator 评审验收，失败自动重试；支持整体评审与最终交付。`PSE_TIMEOUT_SECONDS` 控制整体超时（默认 90s，.env 已设 600s）。
+- **长时任务**：后台线程池执行（可并发多任务），SQLite（`data/tasks.db`）持久化，重启后自动恢复；记录 token 消耗、执行日志、执行过程（可复制错误报告）、执行结果 Markdown 渲染。
 
 ## 常用模型
 
 | 模型名 | 定位 |
 | --- | --- |
-| `qwen-turbo` | 轻量快速，成本低 |
-| `qwen-plus` | 均衡型，默认推荐 |
-| `qwen-max` | 旗舰能力 |
-| `qwen3-coder-plus` | 代码生成 |
+| `qwen-plus` | DashScope 均衡型，默认推荐 |
+| `agnes-2.0-flash` | Agnes 免费模型（默认，自动限流） |
+| `glm-5.2` | 智谱模型（经 DashScope 网关） |
+| `deepseek` | DeepSeek（付费、稳定） |
 
-完整列表见 [百炼模型列表](https://help.aliyun.com/zh/model-studio/models)。
+模型通过 `.env` 的 `DASHSCOPE_MODEL` / Agnes 配置切换。完整列表见 [百炼模型列表](https://help.aliyun.com/zh/model-studio/models)。
 
 ## 常见问题
 

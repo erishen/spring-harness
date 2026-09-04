@@ -1,0 +1,58 @@
+# ============================================
+# Spring Harness - docker-compose 生产部署
+# 用法:
+#   cp .env.example .env  # 配置 API Key 等
+#   docker compose up -d --build
+#   访问 http://localhost:8080
+# ============================================
+services:
+  spring-harness:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: spring-harness:latest
+    container_name: spring-harness
+    restart: unless-stopped
+    ports:
+      - "${SERVER_PORT:-8080}:8080"
+    environment:
+      # ===== 大模型（必填）=====
+      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY:-}
+      - DASHSCOPE_MODEL=${DASHSCOPE_MODEL:-agnes-2.0-flash}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-qwen3.7-text-embedding}
+      - RERANK_MODEL=${RERANK_MODEL:-qwen3.7-text-rerank}
+      # ===== MCP =====
+      - MCP_ENABLED=${MCP_ENABLED:-true}
+      - MCP_FS_DIR=/workspace
+      - RESOLVE_SKILLS_DIR=${RESOLVE_SKILLS_DIR:-/workspace/resolve-skills}
+      - AUTOGEN_PSE_DIR=${AUTOGEN_PSE_DIR:-/workspace/autogen-pse}
+      - RESOLVE_STUDIO_DIR=${RESOLVE_STUDIO_DIR:-/workspace/resolve-studio}
+      # ===== 代码沙箱（需挂载 docker.sock）=====
+      - SANDBOX_ENABLED=${SANDBOX_ENABLED:-true}
+      - SANDBOX_TIMEOUT=${SANDBOX_TIMEOUT:-30}
+      # ===== 长时任务 =====
+      - TASK_POOL_SIZE=${TASK_POOL_SIZE:-4}
+      - TASK_DB_PATH=/app/data/tasks.db
+      - TASK_LOG_DIR=/app/data/task-logs
+      # ===== 记忆 =====
+      - MEMORY_ENABLED=${MEMORY_ENABLED:-true}
+      - MEMORY_EXTRACT_ENABLED=${MEMORY_EXTRACT_ENABLED:-true}
+      # ===== JVM =====
+      - JAVA_OPTS=-Xmx${JVM_XMX:-512m} -Xms256m
+    volumes:
+      # 持久化数据（SQLite + 任务日志）
+      - harness-data:/app/data
+      # 代码沙箱：挂载宿主机 Docker socket（DinD 模式，沙箱容器实际跑在宿主机上）
+      - /var/run/docker.sock:/var/run/docker.sock
+      # MCP 文件系统允许访问的目录（只读，按需修改宿主机路径）
+      - ${MCP_FS_DIR:-./}:/workspace:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  harness-data:
+    driver: local

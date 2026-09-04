@@ -203,7 +203,7 @@ public class DockerSandboxExecutor {
         cmd.add("--ulimit"); cmd.add("nofile=64:64"); // 文件描述符限制
         cmd.add("-v"); cmd.add(codeFile.getAbsolutePath() + ":/tmp/" +
                 LANGUAGE_FILENAMES.get(language) + ":ro");  // 挂载代码文件（只读）
-        cmd.add("--tmpfs"); cmd.add("/tmp:rw,size=128m"); // /tmp 可写（内存文件系统，编译输出/缓存）
+        cmd.add("--tmpfs"); cmd.add("/tmp:rw,size=128m,exec"); // /tmp 可写（内存文件系统），exec 允许编译型语言产出二进制执行
         cmd.add("--stop-timeout"); cmd.add(String.valueOf(Math.min(timeoutSeconds, 10))); // 停止超时
         cmd.add(LANGUAGE_IMAGES.get(language));  // 镜像
         // 执行命令：统一经 sh -c 执行，支持 && 等 shell 操作符（编译后运行）

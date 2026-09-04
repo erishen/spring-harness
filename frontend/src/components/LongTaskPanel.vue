@@ -105,8 +105,11 @@
                 <span class="step-seq">{{ si + 1 }}</span>
                 <span class="step-type">{{ step.type || step.step?.role || 'step' }}</span>
                 <span class="step-title">{{ step.step?.title || step.step?.action || '' }}</span>
-                <pre v-if="step.content" class="step-content">{{ step.content }}</pre>
-                <pre v-if="step.step?.content && step.step.content !== step.content" class="step-content">{{ step.step.content }}</pre>
+                <!-- answer 步骤是 LLM 最终回答（Markdown），渲染展示；其余过程步骤保持原样 pre -->
+                <div v-if="step.content && isAnswerStep(step)" class="step-md task-result-content" v-html="renderMarkdown(step.content)"></div>
+                <pre v-else-if="step.content" class="step-content">{{ step.content }}</pre>
+                <div v-if="step.step?.content && step.step.content !== step.content && isAnswerStep(step)" class="step-md task-result-content" v-html="renderMarkdown(step.step.content)"></div>
+                <pre v-else-if="step.step?.content && step.step.content !== step.content" class="step-content">{{ step.step.content }}</pre>
                 <div v-if="step.toolCall" class="step-tool">
                   <span class="tool-name">{{ step.toolCall.name }}</span>
                   <pre class="tool-io">入参: {{ step.toolCall.input }}</pre>
@@ -248,12 +251,16 @@ async function fetchTasks() {
   }
 }
 
+// 判断步骤是否为 LLM 最终回答（Markdown），需要渲染展示
+function isAnswerStep(step) {
+  return step?.type === 'answer' || step?.step?.role === 'answer'
+}
+
 // 打开详情后给「结果」Markdown 渲染的代码块加语言标签 + 复制按钮
-// 注意：只增强结果区，避免执行过程里的纯文本 pre 被误加 "text 复制" 头部
+// 注意：只增强结果区 + answer 步骤，避免执行过程里的纯文本 pre 被误加 "text 复制" 头部
 function enhanceDetail() {
   nextTick(() => {
-    const rc = document.querySelector('.task-result-content')
-    if (rc) enhanceCodeBlocks(rc)
+    document.querySelectorAll('.task-result-content, .step-md').forEach((el) => enhanceCodeBlocks(el))
   })
 }
 
@@ -710,33 +717,41 @@ onUnmounted(() => {
 }
 .task-error pre { color: #b91c1c; background: #fef2f2; border-color: #fecaca; }
 
-/* ===== 结果 Markdown 内容（全铺开，无单独滚动条） ===== */
-.task-result-content {
+/* ===== 结果 / answer 步骤 Markdown 内容（全铺开，无单独滚动条） ===== */
+.task-result-content, .step-md {
   font-size: 13px;
   line-height: 1.7;
   color: #334155;
   word-break: break-word;
 }
-.task-result-content :deep(p) { margin: 6px 0; }
-.task-result-content :deep(h1),
-.task-result-content :deep(h2),
-.task-result-content :deep(h3),
-.task-result-content :deep(h4) {
+.step-md {
+  width: 100%;
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid #eef0f3;
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.task-result-content :deep(p), .step-md :deep(p){ margin: 6px 0; }
+.task-result-content :deep(h1), .step-md :deep(h1),
+.task-result-content :deep(h2), .step-md :deep(h2),
+.task-result-content :deep(h3), .step-md :deep(h3),
+.task-result-content :deep(h4), .step-md :deep(h4){
   margin: 12px 0 6px;
   font-weight: 600;
   color: #1e293b;
   line-height: 1.4;
 }
-.task-result-content :deep(h1) { font-size: 18px; }
-.task-result-content :deep(h2) { font-size: 16px; }
-.task-result-content :deep(h3) { font-size: 14px; }
-.task-result-content :deep(ul),
-.task-result-content :deep(ol) {
+.task-result-content :deep(h1), .step-md :deep(h1){ font-size: 18px; }
+.task-result-content :deep(h2), .step-md :deep(h2){ font-size: 16px; }
+.task-result-content :deep(h3), .step-md :deep(h3){ font-size: 14px; }
+.task-result-content :deep(ul), .step-md :deep(ul),
+.task-result-content :deep(ol), .step-md :deep(ol){
   margin: 6px 0;
   padding-left: 22px;
 }
-.task-result-content :deep(li) { margin: 3px 0; }
-.task-result-content :deep(code) {
+.task-result-content :deep(li), .step-md :deep(li){ margin: 3px 0; }
+.task-result-content :deep(code), .step-md :deep(code){
   background: #f1f5f9;
   padding: 1px 5px;
   border-radius: 4px;
@@ -744,7 +759,7 @@ onUnmounted(() => {
   font-family: 'SF Mono', 'Menlo', monospace;
   color: #be185d;
 }
-.task-result-content :deep(pre) {
+.task-result-content :deep(pre), .step-md :deep(pre){
   margin: 0;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -754,51 +769,51 @@ onUnmounted(() => {
   white-space: pre-wrap;
   word-break: break-word;
 }
-.task-result-content :deep(pre code) {
+.task-result-content :deep(pre code), .step-md :deep(pre code){
   background: transparent;
   padding: 0;
   color: #1e293b;
 }
-.task-result-content :deep(blockquote) {
+.task-result-content :deep(blockquote), .step-md :deep(blockquote){
   border-left: 3px solid #4a6cf7;
   padding-left: 12px;
   margin: 8px 0;
   color: #6b7280;
 }
-.task-result-content :deep(table) {
+.task-result-content :deep(table), .step-md :deep(table){
   border-collapse: collapse;
   margin: 10px 0;
   width: 100%;
 }
-.task-result-content :deep(th),
-.task-result-content :deep(td) {
+.task-result-content :deep(th), .step-md :deep(th),
+.task-result-content :deep(td), .step-md :deep(td){
   border: 1px solid #e5e7eb;
   padding: 6px 10px;
   text-align: left;
 }
-.task-result-content :deep(th) {
+.task-result-content :deep(th), .step-md :deep(th){
   background: #f8fafc;
   font-weight: 600;
 }
-.task-result-content :deep(hr) {
+.task-result-content :deep(hr), .step-md :deep(hr){
   border: none;
   border-top: 1px solid #e2e8f0;
   margin: 12px 0;
 }
 /* 代码块包装（语言标签 + 复制按钮） */
-.task-result-content :deep(.code-block-wrapper) {
+.task-result-content :deep(.code-block-wrapper), .step-md :deep(.code-block-wrapper){
   position: relative;
   margin: 10px 0;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
-.task-result-content :deep(.code-block-wrapper pre) {
+.task-result-content :deep(.code-block-wrapper pre), .step-md :deep(.code-block-wrapper pre){
   margin: 0;
   border-radius: 0;
   padding-top: 12px;
 }
-.task-result-content :deep(.code-block-header) {
+.task-result-content :deep(.code-block-header), .step-md :deep(.code-block-header){
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -806,14 +821,14 @@ onUnmounted(() => {
   padding: 4px 10px;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
-.task-result-content :deep(.code-block-lang) {
+.task-result-content :deep(.code-block-lang), .step-md :deep(.code-block-lang){
   font-size: 10px;
   font-weight: 500;
   color: #8b9cb8;
   font-family: 'SF Mono', 'Menlo', monospace;
   letter-spacing: 0.3px;
 }
-.task-result-content :deep(.code-copy-btn) {
+.task-result-content :deep(.code-copy-btn), .step-md :deep(.code-copy-btn){
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -828,13 +843,13 @@ onUnmounted(() => {
   transition: all 0.2s ease;
   opacity: 0.75;
 }
-.task-result-content :deep(.code-block-header:hover .code-copy-btn) {
+.task-result-content :deep(.code-block-header:hover .code-copy-btn), .step-md :deep(.code-block-header:hover .code-copy-btn){
   opacity: 1;
   background: rgba(255,255,255,0.08);
   color: #cbd5e1;
   border-color: rgba(255,255,255,0.12);
 }
-.task-result-content :deep(.code-copy-btn.copied) {
+.task-result-content :deep(.code-copy-btn.copied), .step-md :deep(.code-copy-btn.copied){
   background: rgba(16,185,129,0.15);
   color: #34d399;
   border-color: rgba(16,185,129,0.25);

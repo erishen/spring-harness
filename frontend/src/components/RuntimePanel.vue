@@ -310,6 +310,9 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 10px;
 }
+.runtime-panel > * {
+  flex-shrink: 0;
+}
 .runtime-panel::-webkit-scrollbar { width: 6px; }
 .runtime-panel::-webkit-scrollbar-thumb { background: transparent; border-radius: 3px; }
 .runtime-panel:hover::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); }

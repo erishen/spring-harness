@@ -33,19 +33,15 @@
           <button :class="{ active: mode === 'pse' }" @click="mode = 'pse'">PSE 协作</button>
           <button :class="{ active: mode === 'task' }" @click="mode = 'task'">长时任务</button>
         </div>
-        <select v-model="selectedModel" class="model-select" title="选择模型">
-          <option value="">默认 (glm-5.2)</option>
-          <optgroup label="✅ 可直接使用">
-            <option v-for="m in workingModels" :key="m.id" :value="m.id" :title="m.description">
+        <div class="model-select-wrap">
+          <select v-model="selectedModel" class="model-select" title="选择模型（仅显示已启用的模型）">
+            <option value="">默认 (agnes-2.0-flash)</option>
+            <option v-for="m in models" :key="m.id" :value="m.id" :title="m.description">
               {{ m.id }}（{{ m.vendor }}）
             </option>
-          </optgroup>
-          <optgroup label="⚠️ 暂有URL兼容问题">
-            <option v-for="m in pendingModels" :key="m.id" :value="m.id" :title="m.description">
-              {{ m.id }}（{{ m.vendor }}）
-            </option>
-          </optgroup>
-        </select>
+          </select>
+          <button class="model-manage-btn" @click="showModelManager = true" title="模型管理（启用/禁用模型）">⚙️</button>
+        </div>
       </div>
       <div v-if="modeHint" class="mode-hint">{{ modeHint }}</div>
     </div>
@@ -78,6 +74,9 @@
     <!-- 右侧 Runtime 面板：工具列表 + MCP 状态 -->
     <RuntimePanel />
     </div>
+
+    <!-- 模型管理浮层 -->
+    <ModelManager :visible="showModelManager" @close="showModelManager = false" @changed="loadModels" />
     </div>
   </div>
 </template>
@@ -91,6 +90,7 @@ import MessageList from './components/MessageList.vue'
 import ModelSettings from './components/ModelSettings.vue'
 import SessionList from './components/SessionList.vue'
 import LongTaskPanel from './components/LongTaskPanel.vue'
+import ModelManager from './components/ModelManager.vue'
 import { useSessions } from './composables/useSessions.js'
 
 // 多会话管理
@@ -122,11 +122,10 @@ let abortController = null
 // 最后一条用户消息（用于重新生成）
 const lastUserMessage = ref('')
 
-// 模型选择
+// 模型选择（/models 只返回已启用的模型）
 const models = ref([])
 const selectedModel = ref(localStorage.getItem(STORAGE_MODEL_KEY) || 'agnes-2.0-flash')
-const workingModels = computed(() => models.value.filter(m => !m.description.includes('暂需')))
-const pendingModels = computed(() => models.value.filter(m => m.description.includes('暂需')))
+const showModelManager = ref(false)
 
 // 模型参数设置（temperature、max_tokens、top_p、systemPrompt）
 const modelSettings = ref({
@@ -714,8 +713,14 @@ header h1 { font-size: 16px; color: #1f2937; }
   color: #9ca3af;
   padding-left: 2px;
 }
-.model-select {
+.model-select-wrap {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.model-select {
   padding: 6px 10px;
   font-size: 12px;
   border: 1px solid #d1d5db;
@@ -724,11 +729,23 @@ header h1 { font-size: 16px; color: #1f2937; }
   color: #1f2937;
   cursor: pointer;
   outline: none;
-  max-width: 280px;
-  flex-shrink: 0;
+  max-width: 240px;
 }
 .model-select:focus { border-color: #4a6cf7; }
-.model-select optgroup { font-weight: 600; color: #6b7280; }
+.model-manage-btn {
+  font-size: 13px;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.model-manage-btn:hover { border-color: #4a6cf7; background: #f5f7ff; }
 
 /* ---- 内容区水平布局：主内容 + 右侧 Runtime 面板 ---- */
 .content-wrapper {

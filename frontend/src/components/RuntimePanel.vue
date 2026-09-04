@@ -55,39 +55,44 @@
           </div>
         </div>
 
-        <!-- 最近知识库检索链路（search_knowledge 流水线） -->
-        <div class="tool-group rag-trace" v-if="hasRagTool">
-          <div class="group-label">
-            <span class="group-dot rag"></span>
-            <span>最近知识库检索</span>
-            <span class="group-count" v-if="trace && trace.exists">{{ trace.trace.durationMs }}ms</span>
-          </div>
-
-          <div v-if="trace && trace.exists" class="rag-trace-body">
-            <div class="rag-trace-query">🔍 {{ trace.trace.query }}</div>
-            <div class="rag-trace-flow">
-              <span class="flow-node">候选 {{ trace.trace.candidateCount }}</span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-node" :class="{ warn: trace.trace.rankMethod !== 'rerank' }">
-                {{ trace.trace.rankMethod === 'rerank' ? 'Rerank 精排' : '回退向量' }}
-              </span>
-              <span class="flow-arrow">→</span>
-              <span class="flow-node">返回 {{ trace.trace.returnedCount }}</span>
-            </div>
-            <div v-if="trace.trace.fragments && trace.trace.fragments.length" class="rag-trace-frags">
-              <div v-for="(f, fi) in trace.trace.fragments.slice(0, 3)" :key="fi" class="rag-trace-frag">
-                <div class="rag-trace-frag-head">
-                  <span class="rag-frag-source">{{ f.source || '未知来源' }}</span>
-                  <span v-if="f.score != null" class="rag-frag-score">{{ Number(f.score).toFixed(3) }}</span>
-                </div>
-                <div class="rag-frag-snippet">{{ f.snippet }}</div>
-              </div>
-            </div>
-          </div>
-          <div v-else class="rag-trace-empty">尚未执行知识库检索</div>
-        </div>
-
         <div class="empty-hint" v-if="!tools.length">加载中...</div>
+      </div>
+    </div>
+
+    <!-- 最近知识库检索（独立区域，不依赖 Tools 展开） -->
+    <div class="panel-card" v-if="hasRagTool">
+      <div class="card-header" @click="ragExpanded = !ragExpanded">
+        <div class="card-title-group">
+          <span class="card-arrow" :class="{ expanded: ragExpanded }">▶</span>
+          <span class="card-icon">🔍</span>
+          <span class="card-title">最近知识库检索</span>
+        </div>
+        <span class="count-badge" v-if="trace && trace.exists">{{ trace.trace.durationMs }}ms</span>
+      </div>
+
+      <div class="card-body" v-show="ragExpanded">
+        <div v-if="trace && trace.exists" class="rag-trace-body">
+          <div class="rag-trace-query">🔍 {{ trace.trace.query }}</div>
+          <div class="rag-trace-flow">
+            <span class="flow-node">候选 {{ trace.trace.candidateCount }}</span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-node" :class="{ warn: trace.trace.rankMethod !== 'rerank' }">
+              {{ trace.trace.rankMethod === 'rerank' ? 'Rerank 精排' : '回退向量' }}
+            </span>
+            <span class="flow-arrow">→</span>
+            <span class="flow-node">返回 {{ trace.trace.returnedCount }}</span>
+          </div>
+          <div v-if="trace.trace.fragments && trace.trace.fragments.length" class="rag-trace-frags">
+            <div v-for="(f, fi) in trace.trace.fragments.slice(0, 3)" :key="fi" class="rag-trace-frag">
+              <div class="rag-trace-frag-head">
+                <span class="rag-frag-source">{{ f.source || '未知来源' }}</span>
+                <span v-if="f.score != null" class="rag-frag-score">{{ Number(f.score).toFixed(3) }}</span>
+              </div>
+              <div class="rag-frag-snippet">{{ f.snippet }}</div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="rag-trace-empty">尚未执行知识库检索</div>
       </div>
     </div>
 
@@ -200,6 +205,7 @@ let traceTimer = null
 // 折叠状态
 const toolsExpanded = ref(false)
 const skillsExpanded = ref(false)
+const ragExpanded = ref(true)
 const statusExpanded = ref(true)
 
 const localToolCount = computed(() => tools.value.filter(t => !t.fromMcp).length)

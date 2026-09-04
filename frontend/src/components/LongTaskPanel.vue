@@ -27,8 +27,8 @@
       <div class="task-examples-header">
         <span class="task-examples-title">✨ 示例任务</span>
         <span class="task-examples-hint">点击预填 · 覆盖本地工具 / Skills / MCP / 代码沙箱</span>
-        <button class="ex-refresh-btn" @click="loadExamples" :disabled="loadingExamples" title="根据当前环境能力刷新示例任务">
-          <span :class="{ spinning: loadingExamples }">↻</span> 刷新
+        <button class="ex-refresh-btn" @click="loadExamples(true)" :disabled="loadingExamples" title="调用大模型基于当前环境能力重新生成示例任务">
+          <span :class="{ spinning: loadingExamples }">↻</span> AI 生成
         </button>
       </div>
       <div class="task-example-item" v-for="ex in examples" :key="ex.title" @click="fillExample(ex)">
@@ -191,10 +191,10 @@ let timer = null
 const examples = ref([])
 const loadingExamples = ref(false)
 
-async function loadExamples() {
+async function loadExamples(withLlm = false) {
   loadingExamples.value = true
   try {
-    const data = await getExamples('longtask')
+    const data = await getExamples('longtask', withLlm)
     examples.value = (data.examples || []).map(e => ({
       type: e.type,
       typeLabel: e.typeLabel || (e.type === 'pse' ? 'PSE' : 'ReAct'),

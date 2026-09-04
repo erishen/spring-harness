@@ -14,8 +14,8 @@
           {{ ex.title }}
         </button>
       </div>
-      <button class="refresh-btn" @click="refresh" :disabled="loadingExamples" title="刷新示例问题">
-        <span :class="{ spinning: loadingExamples }">↻</span> 刷新
+      <button class="refresh-btn" @click="refresh" :disabled="loadingExamples" title="调用大模型基于当前环境重新生成示例">
+        <span :class="{ spinning: loadingExamples }">↻</span> AI 生成
       </button>
     </div>
 
@@ -61,10 +61,10 @@ const loadingExamples = ref(false)
 // 模式 → 后端示例接口参数
 const MODE_PARAM = { chat: 'chat', agent: 'agent', pse: 'pse', rag: 'rag', task: 'longtask' }
 
-async function refresh() {
+async function load(withLlm = false) {
   loadingExamples.value = true
   try {
-    const data = await getExamples(MODE_PARAM[props.mode] || 'chat')
+    const data = await getExamples(MODE_PARAM[props.mode] || 'chat', withLlm)
     examples.value = data.examples || []
   } catch (e) {
     examples.value = []
@@ -74,7 +74,9 @@ async function refresh() {
   }
 }
 
-watch(() => props.mode, () => refresh(), { immediate: true })
+// 切模式：快速模板（不调用大模型）；点刷新：LLM 重新生成（内容会变化）
+watch(() => props.mode, () => load(false), { immediate: true })
+const refresh = () => load(true)
 
 function applyExample(text) {
   emit('update:modelValue', text)

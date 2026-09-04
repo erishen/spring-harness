@@ -178,9 +178,9 @@ export async function getSkills() {
 // ==================== 长期记忆 API ====================
 
 /** 获取记忆列表与状态 */
-/** 获取示例任务（根据当前环境能力 + 模式动态生成） */
-export async function getExamples(mode) {
-  const res = await request('/api/examples' + buildQuery({ mode }))
+/** 获取示例任务（根据当前环境能力 + 模式动态生成；llm=true 时调用大模型重新生成） */
+export async function getExamples(mode, llm = false) {
+  const res = await request('/api/examples' + buildQuery({ mode, llm }))
   return res.json()
 }
 

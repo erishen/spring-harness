@@ -148,6 +148,53 @@
 
 ---
 
+## 🔒 隐私合规与安全（待办）
+
+> 2026-09-04 第二轮隐私合规检查发现的待修复问题。已完成的修复见下方「已完成」。
+
+### 已完成 ✅
+
+| 日期 | 问题 | 修复方案 | 提交 |
+|------|------|----------|------|
+| 2026-09-04 | XSS 安全隐患（v-html 渲染 LLM Markdown 未过滤 HTML） | 安装 DOMPurify，renderMarkdown 增加消毒（白名单标签/属性，禁止 script/iframe/on* 事件）；RagPanel 改用 renderMarkdown | 409f726 |
+| 2026-09-04 | Actuator health show-details=always 泄露服务器配置 | 改为 never，只返回 UP/DOWN 基本状态 | 377221b |
+| 2026-09-04 | MCP 工具输出未脱敏（API Key 可能泄露到 LLM 上下文/持久化存储） | ErrorSanitizer 新增 sanitizeContent（只过滤敏感凭证，不过滤 URL/路径/IP，不限制长度）；SpecialistAgent/ReActAgentService executeTool 增加脱敏 | 377221b |
+
+### 待修复 ⏳
+
+#### 🟡 中优先级
+
+- **[ ] 1. CSRF 防护**
+  - **问题**：只有 CORS 配置，没有 CSRF（跨站请求伪造）防护。部署到公网时，攻击者可诱导已登录用户发起 POST/PUT/DELETE 请求（删除数据、上传恶意文档等）
+  - **方案**：启用 Spring Security CSRF 防护，或对状态变更接口要求 CSRF Token
+  - **涉及文件**：新建 `config/SecurityConfig.java`（如未启用 Spring Security）
+  - **备注**：本地 demo 可暂不做，部署到公网前必须完成
+
+- **[ ] 2. 全局速率限制**
+  - **问题**：只有 Agnes 模型有速率限制（AgnesRateLimiter），其他模型和接口（聊天、RAG、长时任务、文件上传）没有速率限制，可能被滥用导致 API Key 额度耗尽或服务器资源耗尽
+  - **方案**：使用 bucket4j 或 Spring Cloud Gateway 增加全局速率限制，按 IP 或用户限制请求频率
+  - **涉及文件**：新建 `config/RateLimitConfig.java` + `filter/RateLimitFilter.java`
+  - **备注**：本地 demo 可暂不做，部署到公网前必须完成
+
+#### 🟢 低优先级
+
+- **[ ] 3. 长时任务数据脱敏**
+  - **问题**：长时任务的 result/steps/error 直接存储到 SQLite，没有脱敏处理。如果任务执行过程中包含敏感信息（API Key、个人信息、文件路径），会被持久化存储
+  - **方案**：在 LongTaskStore.save 存储前，使用 ErrorSanitizer.sanitizeContent 过滤 result/steps/error 中的敏感凭证
+  - **涉及文件**：`task/LongTaskStore.java`、`task/TaskManager.java`
+
+- **[ ] 4. 前端 localStorage 聊天历史加密**
+  - **问题**：聊天历史存储在 localStorage 中，没有加密。本地攻击者或恶意浏览器扩展可以读取
+  - **方案**：对 localStorage 中的聊天历史进行简单加密（如 AES），或提供"隐私模式"不存储历史记录
+  - **涉及文件**：`composables/useChat.js`
+
+- **[ ] 5. 审计日志**
+  - **问题**：没有用户操作审计日志，无法追溯敏感操作（删除数据、导出数据、上传文档、调用 MCP 工具等）
+  - **方案**：增加审计日志，记录关键操作（时间、操作类型、操作对象、IP 地址），存储到独立的 audit.log 文件或数据库表
+  - **涉及文件**：新建 `audit/AuditLogService.java` + `audit/AuditAspect.java`（AOP 切面）
+
+---
+
 ## 🎯 下一步建议
 
 **推荐从任务 #1（多轮对话上下文）开始**，这是聊天应用最核心的体验提升。

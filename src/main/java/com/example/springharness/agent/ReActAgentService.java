@@ -151,7 +151,11 @@ public class ReActAgentService {
             }
 
             // 3. 有工具调用，记录 Thought（LLM 的思考内容）
-            String thought = assistantMsg.getText() != null ? assistantMsg.getText() : "(正在调用工具...)";
+            // 注意：部分模型（如 agnes-2.0-flash）返回工具调用时 text 可能为空白
+            //（推理内容在独立 reasoning 字段，未进入 getText()），需兜底避免空步骤
+            String thought = (assistantMsg.getText() != null && !assistantMsg.getText().isBlank())
+                    ? assistantMsg.getText().trim()
+                    : "(正在思考，准备调用工具...)";
             messages.add(assistantMsg);
             callback.accept(new ReActStreamEvent("thinking", iteration + 1, null, thought, null, null));
 

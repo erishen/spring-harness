@@ -101,7 +101,9 @@
           <div v-if="task.steps && task.steps.length" class="task-steps">
             <span class="detail-label">执行过程（{{ task.steps.length }} 条）</span>
             <div class="step-list">
-              <div v-for="(step, si) in task.steps" :key="si" class="step-item">
+              <!-- 空白 thinking 步骤（占位/无推理内容）直接隐藏，避免空行 -->
+              <template v-for="(step, si) in task.steps" :key="si">
+              <div v-if="!(step.type === 'thinking' && !(step.content || step.step?.content || '').trim())" class="step-item">
                 <span class="step-seq">{{ si + 1 }}</span>
                 <span class="step-type">{{ step.type || step.step?.role || 'step' }}</span>
                 <span class="step-title">{{ step.step?.title || step.step?.action || '' }}</span>
@@ -142,6 +144,7 @@
                   <pre v-if="step.toolCall.output" class="tool-io">结果: {{ prettyJson(step.toolCall.output) }}</pre>
                 </div>
               </div>
+              </template>
             </div>
           </div>
           <div v-if="task.result" class="task-result">

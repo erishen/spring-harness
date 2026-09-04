@@ -39,7 +39,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { marked } from 'marked'
+import { renderMarkdown } from '../utils/markdown'
 
 // RAG 文档管理
 const documents = ref([])
@@ -56,7 +56,7 @@ const totalChunks = computed(() => documents.value.reduce((sum, d) => sum + d.ch
 const renderedContent = computed(() => {
   if (!previewContent.value) return ''
   try {
-    return marked.parse(previewContent.value)
+    return renderMarkdown(previewContent.value)
   } catch {
     return `<pre>${previewContent.value}</pre>`
   }

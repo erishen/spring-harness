@@ -8,6 +8,7 @@ import { marked } from 'marked'
 import { markedHighlight } from 'marked-highlight'
 import hljs from 'highlight.js/lib/core'
 import 'highlight.js/styles/github.css'
+import DOMPurify from 'dompurify'
 
 // 常用语言（覆盖 LLM 主要输出），按需注册
 import javascript from 'highlight.js/lib/languages/javascript'
@@ -78,6 +79,8 @@ marked.setOptions({
 /**
  * 渲染 Markdown 为 HTML 字符串。
  * 预处理：修复 LLM 生成的不规范语法（标题/列表后缺空格、加粗星号位置错误）。
+ * 安全：使用 DOMPurify 对 marked 输出的 HTML 进行消毒，防止 XSS 攻击
+ *       （LLM 返回内容或用户上传文档可能包含恶意 script/onerror 等）。
  */
 export function renderMarkdown(content) {
   if (!content) return ''
@@ -94,7 +97,24 @@ export function renderMarkdown(content) {
   processed = processed.replace(/([\u4e00-\u9fa5a-zA-Z0-9]+)[*＊]([：:])/g, '**$1**$2')
   // 不规范加粗/斜体："*词*：" → "**词**："（LLM 常把加粗写成斜体格式，后面多一个星号）
   processed = processed.replace(/[*＊]([\u4e00-\u9fa5a-zA-Z0-9]{1,10})[*＊]([：:])/g, '**$1**$2')
-  return marked.parse(processed)
+  // marked 解析为 HTML 后，用 DOMPurify 消毒（移除 script、onerror、javascript: 等危险内容）
+  const rawHtml = marked.parse(processed)
+  return DOMPurify.sanitize(rawHtml, {
+    // 允许的标签：marked 常用输出 + 代码高亮需要的标签
+    ALLOWED_TAGS: [
+      'a', 'b', 'blockquote', 'br', 'code', 'div', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'hr', 'i', 'img', 'li', 'ol', 'p', 'pre', 'span', 'strong', 'sub', 'sup', 'table',
+      'tbody', 'td', 'th', 'thead', 'tr', 'ul', 'del', 'ins', 'mark', 'small', 'details',
+      'summary', 'figure', 'figcaption', 'abbr', 'cite', 'q', 'time', 'var', 'kbd', 'samp'
+    ],
+    // 允许的属性：href（链接）、src（图片）、alt、title、class（代码高亮）、colspan/rowspan（表格）
+    ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'class', 'colspan', 'rowspan', 'target', 'rel', 'lang'],
+    // 强制链接在新标签打开且添加 noopener（防止 tabnabbing）
+    ADD_ATTR: ['target', 'rel'],
+    // 禁止的标签：script、style、iframe、表单元素、meta 等
+    FORBID_TAGS: ['script', 'style', 'iframe', 'object', 'embed', 'form', 'input', 'button', 'textarea', 'select', 'meta', 'link', 'base', 'canvas', 'svg', 'math'],
+    // DOMPurify 默认已移除所有 on* 事件处理器和 javascript: 协议，无需显式列出
+  })
 }
 
 /**

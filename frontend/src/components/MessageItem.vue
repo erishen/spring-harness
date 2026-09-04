@@ -286,6 +286,178 @@ async function copyPseSteps() {
   border-color: #fecaca;
   color: #991b1b;
 }
+
+/* ===== Markdown 内容样式（AI 回答） ===== */
+:deep(.md-content) {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #1f2937;
+}
+:deep(.md-content > *:first-child) { margin-top: 0; }
+:deep(.md-content > *:last-child) { margin-bottom: 0; }
+
+/* 标题 */
+:deep(.md-content h1),
+:deep(.md-content h2),
+:deep(.md-content h3),
+:deep(.md-content h4),
+:deep(.md-content h5),
+:deep(.md-content h6) {
+  margin: 16px 0 8px;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+}
+:deep(.md-content h1) { font-size: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; }
+:deep(.md-content h2) { font-size: 17px; border-bottom: 1px solid #f3f4f6; padding-bottom: 4px; }
+:deep(.md-content h3) { font-size: 15.5px; }
+:deep(.md-content h4) { font-size: 14.5px; }
+:deep(.md-content h5), :deep(.md-content h6) { font-size: 13.5px; color: #4b5563; }
+
+/* 段落 */
+:deep(.md-content p) {
+  margin: 8px 0;
+}
+
+/* 列表 */
+:deep(.md-content ul),
+:deep(.md-content ol) {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+:deep(.md-content li) {
+  margin: 4px 0;
+  line-height: 1.6;
+}
+:deep(.md-content ul ul),
+:deep(.md-content ul ol),
+:deep(.md-content ol ul),
+:deep(.md-content ol ol) {
+  margin: 4px 0;
+}
+:deep(.md-content li > p) { margin: 2px 0; }
+
+/* 任务列表 */
+:deep(.md-content li input[type="checkbox"]) {
+  margin-right: 6px;
+  transform: translateY(1px);
+}
+
+/* 表格 */
+:deep(.md-content table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+  font-size: 13px;
+  display: block;
+  overflow-x: auto;
+}
+:deep(.md-content th),
+:deep(.md-content td) {
+  border: 1px solid #e5e7eb;
+  padding: 7px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+:deep(.md-content th) {
+  background: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  white-space: nowrap;
+}
+:deep(.md-content tr:nth-child(even) td) {
+  background: #fafafa;
+}
+:deep(.md-content tr:hover td) {
+  background: #f0f7ff;
+}
+
+/* 引用块 */
+:deep(.md-content blockquote) {
+  margin: 10px 0;
+  padding: 8px 14px;
+  border-left: 4px solid #3b82f6;
+  background: #f0f7ff;
+  color: #4b5563;
+  border-radius: 0 6px 6px 0;
+}
+:deep(.md-content blockquote p) {
+  margin: 4px 0;
+}
+:deep(.md-content blockquote blockquote) {
+  margin: 6px 0;
+  border-left-color: #a78bfa;
+  background: #f5f3ff;
+}
+
+/* 行内代码 */
+:deep(.md-content code) {
+  background: #f3f4f6;
+  color: #db2777;
+  padding: 1.5px 6px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-family: 'SF Mono', 'Fira Code', Monaco, Consolas, monospace;
+  word-break: break-all;
+}
+:deep(.md-content pre code) {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* 链接 */
+:deep(.md-content a) {
+  color: #2563eb;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s;
+}
+:deep(.md-content a:hover) {
+  border-bottom-color: #2563eb;
+}
+
+/* 图片 */
+:deep(.md-content img) {
+  max-width: 100%;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+/* 水平线 */
+:deep(.md-content hr) {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 16px 0;
+}
+
+/* 强调 */
+:deep(.md-content strong) {
+  color: #111827;
+  font-weight: 600;
+}
+:deep(.md-content em) {
+  color: #7c3aed;
+  font-style: italic;
+}
+:deep(.md-content del) {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+/* 键盘按键 */
+:deep(.md-content kbd) {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 11.5px;
+  font-family: 'SF Mono', Monaco, monospace;
+  color: #374151;
+}
+
 .typing {
   display: inline-flex;
   gap: 4px;

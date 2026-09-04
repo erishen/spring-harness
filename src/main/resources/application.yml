@@ -39,6 +39,9 @@ spring:
     # 启用后，MCP 工具会自动被 Planner/Specialist 使用，无需修改代码
     mcp:
       client:
+        # MCP 请求超时（秒）：portfolio-check / pse-review 等长耗时工具需要几分钟，
+        # 默认超时太短会导致工具调用失败，Specialist 反复重试达到循环上限
+        request-timeout: 600s
         # STDIO 传输：启动本地 MCP 服务器进程
         stdio:
           connections:

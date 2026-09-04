@@ -45,7 +45,8 @@ public class SpecialistAgent {
     private int maxTokens;
 
     /** 最大工具调用循环次数 */
-    private static final int MAX_ITERATIONS = 8;
+    /** 最大循环次数，防止无限循环（portfolio-check / pse-review 等长耗时工具需要更多循环） */
+    private static final int MAX_ITERATIONS = 15;
 
     /** 单轮最多执行的工具调用数：LLM 可能一次返回大量工具调用（曾达 21 个），
      *  大量 arguments + responses 会撑爆上下文（单条消息无法被 trim 部分裁剪），故限流。 */
@@ -182,6 +183,13 @@ public class SpecialistAgent {
                 %s
                 可用工具：
                 %s
+
+                【长耗时工具注意事项】
+                - portfolio_check：投资数据体检，执行时间 1-3 分钟（需运行 make calculate/analyze/compare）
+                - pse_review：深度投资周报生成，执行时间 2-6 分钟（PSE 三角色流水线 + 知识库检索）
+                - 调用上述工具后请耐心等待结果，不要因为等待时间长而反复重试
+                - 如果工具返回失败，先分析失败原因，最多重试 1 次，仍失败则在结果中说明失败原因
+                - 不要在一次循环中多次调用同一个长耗时工具
 
                 请用中文汇报执行结果。
                 """.formatted(task.name(), ac, toolList);

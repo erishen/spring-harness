@@ -748,50 +748,80 @@ header h1 { font-size: 16px; color: #1f2937; }
 </style>
 
 <!-- ============================================================
-     单一竖向滚动条策略（全局，非 scoped）
-     页面只保留主内容区（.chat-container / .longtask-panel）的
-     竖向滚动条；其余辅助滚动容器（左侧会话、右侧面板、详情步骤、
-     日志、代码块）隐藏滚动条但保留滚动能力。
+     滚动条策略 B（全局，非 scoped）：hover 才显示
+     所有可滚动容器默认隐藏滚动条（轨道常驻透明、不占布局抖动），
+     鼠标悬停到该容器时显示灰色细滚动条。
+     主聊天区 / 长时面板 / 会话 / 右侧面板 / 步骤日志 / 代码块 统一。
      ============================================================ -->
 <style>
-.sidebar .sessions,
+.chat-container,
+.sessions,
+.runtime-panel,
+.longtask-panel,
 .longtask-panel .step-list,
 .longtask-panel .log-list,
 .longtask-panel .task-message-input,
 .code-block-wrapper pre {
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
   -ms-overflow-style: none;
 }
-.sidebar .sessions::-webkit-scrollbar,
+.chat-container::-webkit-scrollbar,
+.sessions::-webkit-scrollbar,
+.runtime-panel::-webkit-scrollbar,
+.longtask-panel::-webkit-scrollbar,
 .longtask-panel .step-list::-webkit-scrollbar,
 .longtask-panel .log-list::-webkit-scrollbar,
 .longtask-panel .task-message-input::-webkit-scrollbar,
 .code-block-wrapper pre::-webkit-scrollbar {
-  display: none;
-  width: 0;
-  height: 0;
-}
-
-/* 右侧 Runtime 面板：平时隐藏滚动条，hover/滚动时显示细滚动条，
-   让用户可感知面板可下拉查看更多工具/Skills（单一滚动条策略的例外） */
-.runtime-panel {
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.runtime-panel::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
-.runtime-panel::-webkit-scrollbar-thumb {
+.chat-container::-webkit-scrollbar-thumb,
+.sessions::-webkit-scrollbar-thumb,
+.runtime-panel::-webkit-scrollbar-thumb,
+.longtask-panel::-webkit-scrollbar-thumb,
+.longtask-panel .step-list::-webkit-scrollbar-thumb,
+.longtask-panel .log-list::-webkit-scrollbar-thumb,
+.longtask-panel .task-message-input::-webkit-scrollbar-thumb,
+.code-block-wrapper pre::-webkit-scrollbar-thumb {
   background: transparent;
   border-radius: 3px;
 }
+.chat-container:hover,
+.chat-container:active,
+.sessions:hover,
+.sessions:active,
 .runtime-panel:hover,
-.runtime-panel:active {
-  scrollbar-width: thin;
+.runtime-panel:active,
+.longtask-panel:hover,
+.longtask-panel:active,
+.longtask-panel .step-list:hover,
+.longtask-panel .step-list:active,
+.longtask-panel .log-list:hover,
+.longtask-panel .log-list:active,
+.longtask-panel .task-message-input:hover,
+.longtask-panel .task-message-input:active,
+.code-block-wrapper pre:hover,
+.code-block-wrapper pre:active {
   scrollbar-color: #d1d5db transparent;
 }
+.chat-container:hover::-webkit-scrollbar-thumb,
+.chat-container:active::-webkit-scrollbar-thumb,
+.sessions:hover::-webkit-scrollbar-thumb,
+.sessions:active::-webkit-scrollbar-thumb,
 .runtime-panel:hover::-webkit-scrollbar-thumb,
-.runtime-panel:active::-webkit-scrollbar-thumb {
+.runtime-panel:active::-webkit-scrollbar-thumb,
+.longtask-panel:hover::-webkit-scrollbar-thumb,
+.longtask-panel:active::-webkit-scrollbar-thumb,
+.longtask-panel .step-list:hover::-webkit-scrollbar-thumb,
+.longtask-panel .step-list:active::-webkit-scrollbar-thumb,
+.longtask-panel .log-list:hover::-webkit-scrollbar-thumb,
+.longtask-panel .log-list:active::-webkit-scrollbar-thumb,
+.longtask-panel .task-message-input:hover::-webkit-scrollbar-thumb,
+.longtask-panel .task-message-input:active::-webkit-scrollbar-thumb,
+.code-block-wrapper pre:hover::-webkit-scrollbar-thumb,
+.code-block-wrapper pre:active::-webkit-scrollbar-thumb {
   background: #d1d5db;
 }
 </style>

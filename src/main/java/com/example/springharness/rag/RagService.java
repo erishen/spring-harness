@@ -93,6 +93,9 @@ public class RagService {
      * 支持 PDF、TXT、MD 等文本格式。
      */
     public DocumentInfo addDocument(MultipartFile file) throws IOException {
+        // 上传校验：后缀白名单 + 大小 + MIME + 魔数（防止伪造后缀/二进制文件）
+        validateUpload(file);
+
         String originalFileName = file.getOriginalFilename();
         String docId = UUID.randomUUID().toString().substring(0, 8);
         List<Document> rawDocuments = loadDocuments(file, originalFileName);
@@ -223,6 +226,89 @@ public class RagService {
     }
 
     // ==================== 私有方法 ====================
+
+    /** 允许上传的文件后缀白名单 */
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
+            ".pdf", ".doc", ".docx", ".txt", ".md", ".markdown",
+            ".json", ".xml", ".java", ".py", ".js", ".ts", ".html", ".css",
+            ".csv", ".log", ".yaml", ".yml", ".properties", ".sql", ".sh",
+            ".go", ".rs", ".c", ".cpp", ".h", ".hpp"
+    );
+
+    /** 允许的 MIME 类型（软校验，浏览器常给 octet-stream，故仅作参考） */
+    private static final Set<String> ALLOWED_MIME_TYPES = Set.of(
+            "application/pdf", "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain", "text/markdown", "text/x-markdown", "application/json",
+            "text/xml", "application/xml", "text/html", "text/css", "text/csv",
+            "application/x-yaml", "application/yaml", "text/yaml",
+            "application/x-java-source", "text/x-python", "text/x-java-source",
+            "application/octet-stream"
+    );
+
+    private static final long MAX_FILE_SIZE = 50L * 1024 * 1024;
+
+    /**
+     * 上传文件校验：后缀白名单 + 大小 + MIME + 魔数。
+     * 防止伪造后缀（如把 .exe 改名为 .pdf）或上传二进制/损坏文件。
+     */
+    private void validateUpload(MultipartFile file) throws IOException {
+        String name = file.getOriginalFilename();
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("文件名不能为空");
+        }
+        String lower = name.toLowerCase();
+        String ext = lower.contains(".") ? lower.substring(lower.lastIndexOf('.')) : "";
+        if (!ALLOWED_EXTENSIONS.contains(ext)) {
+            throw new IllegalArgumentException("不支持的文件类型: " + ext
+                    + "，支持: " + String.join(" / ", ALLOWED_EXTENSIONS));
+        }
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException("文件过大: " + (file.getSize() / 1024 / 1024) + "MB，上限 50MB");
+        }
+        // MIME 软校验：不在白名单且不是 octet-stream 时拒绝（防明显伪装）
+        String mime = file.getContentType();
+        if (mime != null && !mime.isBlank()
+                && !ALLOWED_MIME_TYPES.contains(mime.toLowerCase())
+                && !mime.startsWith("text/")) {
+            throw new IllegalArgumentException("文件 MIME 类型不被允许: " + mime);
+        }
+
+        // 魔数校验：读取文件头 8 字节
+        byte[] head = file.getInputStream().readNBytes(8);
+        if (lower.endsWith(".pdf")) {
+            if (head.length < 5 || !"%PDF-".equals(new String(head, 0, 5, StandardCharsets.ISO_8859_1))) {
+                throw new IllegalArgumentException("PDF 文件魔数校验失败（文件可能损坏或伪造后缀）");
+            }
+        } else if (lower.endsWith(".docx")) {
+            // DOCX 本质是 ZIP，魔数 PK\x03\x04
+            if (head.length < 4 || !(head[0] == 0x50 && head[1] == 0x4B && head[2] == 0x03 && head[3] == 0x04)) {
+                throw new IllegalArgumentException("DOCX 文件魔数校验失败（应为 ZIP 格式）");
+            }
+        } else if (lower.endsWith(".doc")) {
+            // 旧版 OLE 复合文档魔数 D0 CF 11 E0 A1 B1 1A E1
+            if (head.length < 8 || !(head[0] == (byte) 0xD0 && head[1] == (byte) 0xCF
+                    && head[2] == 0x11 && head[3] == (byte) 0xE0)) {
+                throw new IllegalArgumentException("DOC 文件魔数校验失败（应为 OLE 复合文档）");
+            }
+        } else {
+            // 文本类文件：检查前 8KB 可打印字符比例，拒绝明显二进制
+            byte[] sample = file.getInputStream().readNBytes(8192);
+            if (sample.length > 0) {
+                int printable = 0;
+                for (byte b : sample) {
+                    int v = b & 0xFF;
+                    // 允许：制表/换行/回车、ASCII 可打印、UTF-8 多字节（>=0x80）
+                    if (v == 0x09 || v == 0x0A || v == 0x0D || (v >= 0x20 && v <= 0x7E) || v >= 0x80) {
+                        printable++;
+                    }
+                }
+                if ((double) printable / sample.length < 0.85) {
+                    throw new IllegalArgumentException("文件内容疑似二进制（可打印字符比例过低），不支持上传");
+                }
+            }
+        }
+    }
 
     /**
      * 根据文件类型选择切分器。

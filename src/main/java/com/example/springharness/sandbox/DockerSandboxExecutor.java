@@ -195,6 +195,8 @@ public class DockerSandboxExecutor {
         cmd.add("docker");
         cmd.add("run");
         cmd.add("--rm");                          // 执行完自动删除
+        cmd.add("--cap-drop"); cmd.add("ALL");    // 丢弃所有 Linux capabilities（最小权限）
+        cmd.add("--security-opt"); cmd.add("no-new-privileges"); // 禁止 setuid 提权
         cmd.add("--network"); cmd.add("none");   // 禁用网络
         cmd.add("--read-only");                   // 只读根文件系统
         cmd.add("--memory"); cmd.add(memoryMb + "m");  // 内存限制

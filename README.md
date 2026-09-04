@@ -1,173 +1,173 @@
 # spring-harness
 
-基于 **Spring AI Alibaba**（阿里云百炼 / 通义千问 DashScope）的全栈 AI Agent 开发框架，国内直连、无需代理。
+A full-stack AI Agent development framework based on **Spring AI Alibaba** (Alibaba Cloud Bailian / Tongyi Qianwen DashScope), with direct access in China and no proxy required.
 
 > English | [中文文档](./README.zh.md)
 
-## 功能特性
+## Features
 
-- **五种交互模式**：普通对话 / RAG 知识库 / ReAct Agent / PSE 协作 / 长时任务
-- **ReAct Agent**：LLM 自动识别意图调用工具，SSE 流式输出，完整展示工具调用过程
-- **PSE 协作编排**：Planner → Specialist → Evaluator 三角色流水线，支持子任务并行、失败重试、整体评审
-- **RAG 知识库**：上传文档（PDF/TXT/MD/JSON/Java/Python 等）→ 切分向量化 → Rerank 精排检索，并接入 Agent / PSE / 长时任务
-- **本地工具 7 个**：计算器、当前时间、股票实时行情、汇率、代码沙箱、技能加载、知识库检索
-- **MCP 集成**：filesystem + portfolio-check + pse-review（投资数据管线）
-- **Skills**：可加载 resolve-skills 技能库（code-review、weekly-investment 等），对齐 Claude Code / Codex 开放标准
-- **Docker 代码沙箱**：隔离执行 **8 种语言**（python / javascript / shell / java / go / rust / c / cpp）
-- **长时任务**：SQLite 持久化，token 消耗统计、执行日志、可中断可续跑
-- **长期记忆（Memory）**：自动从对话抽取用户偏好/事实/目标 → 存 SQLite → 跨会话注入各模式 System prompt（方案 B 会话窗口记忆可选）
-- **动态示例任务**：输入框 / 长时任务的示例问题按「当前模式 + 环境能力（本地工具 / MCP / 沙箱语言 / 知识库 / 记忆 / Skills）」实时生成，可一键刷新
-- **Agnes 模型接入**：免费额度，自动限流（可切换 DeepSeek / DashScope 多模型）
+- **Five Interaction Modes**: Chat / RAG Knowledge Base / ReAct Agent / PSE Collaboration / Long-running Tasks
+- **ReAct Agent**: LLM automatically identifies intent and calls tools, SSE streaming output, complete tool call process display
+- **PSE Collaboration Orchestration**: Planner → Specialist → Evaluator three-role pipeline, supports subtask parallelism, failure retry, and overall review
+- **RAG Knowledge Base**: Upload documents (PDF/TXT/MD/JSON/Java/Python, etc.) → chunking & vectorization → Rerank precision retrieval, integrated with Agent / PSE / Long-running Tasks
+- **7 Local Tools**: Calculator, Current Time, Stock Real-time Quotes, Exchange Rate, Code Sandbox, Skill Loading, Knowledge Base Retrieval
+- **MCP Integration**: filesystem + portfolio-check + pse-review (investment data pipeline)
+- **Skills**: Load resolve-skills library (code-review, weekly-investment, etc.), aligned with Claude Code / Codex open standards
+- **Docker Code Sandbox**: Isolated execution of **8 languages** (python / javascript / shell / java / go / rust / c / cpp)
+- **Long-running Tasks**: SQLite persistence, token consumption statistics, execution logs, interruptible and resumable
+- **Long-term Memory (Memory)**: Automatically extract user preferences/facts/goals from conversations → store in SQLite → inject into System prompt across sessions and modes (Plan B session window memory optional)
+- **Dynamic Example Tasks**: Example questions in input box / long-running tasks are generated in real-time based on "current mode + environment capabilities (local tools / MCP / sandbox languages / knowledge base / memory / Skills)", refreshable with one click
+- **Agnes Model Integration**: Free quota, automatic rate limiting (switchable to DeepSeek / DashScope multi-model)
 
-## 技术栈
+## Tech Stack
 
-| 组件 | 版本 | 说明 |
+| Component | Version | Description |
 | --- | --- | --- |
-| Java | 17 | 后端运行时 |
-| Spring Boot | 3.5.16 | 后端 Web 框架 |
-| Spring AI Alibaba | 1.1.2.3 | DashScope starter，自带 Spring AI 版本管理 |
-| Vue | 3.5.x | 前端框架 |
-| Vite | 5.4.x | 前端构建工具 + 开发服务器 |
-| 构建工具 | Maven 3.9+ / npm 10+ | 后端 Maven，前端 npm |
+| Java | 17 | Backend runtime |
+| Spring Boot | 3.5.16 | Backend web framework |
+| Spring AI Alibaba | 1.1.2.3 | DashScope starter, with Spring AI version management |
+| Vue | 3.5.x | Frontend framework |
+| Vite | 5.4.x | Frontend build tool + dev server |
+| Build Tools | Maven 3.9+ / npm 10+ | Backend Maven, frontend npm |
 
-> 说明：Spring AI Alibaba 2.0.x 需搭配 Spring Boot 4，本示例选用 **1.1.x + Boot 3.5** 的成熟稳定组合。
+> Note: Spring AI Alibaba 2.0.x requires Spring Boot 4. This example uses the mature and stable combination of **1.1.x + Boot 3.5**.
 
-## 目录结构
+## Directory Structure
 
 ```
 spring-harness
-├── .env                  # 本地配置（含密钥，已 gitignore）
-├── .env.example          # 配置模板（可提交）
-├── Makefile              # 常用命令封装
+├── .env                  # Local configuration (contains secrets, gitignored)
+├── .env.example          # Configuration template (committable)
+├── Makefile              # Common command wrappers
 ├── pom.xml
-├── frontend/             # 前端（Vite + Vue 3）
+├── frontend/             # Frontend (Vite + Vue 3)
 │   ├── package.json
-│   ├── vite.config.js    # 开发代理：/api、/chat 等 → http://localhost:8080
+│   ├── vite.config.js    # Dev proxy: /api, /chat, etc. → http://localhost:8080
 │   ├── index.html
 │   └── src/
 │       ├── main.js
-│       ├── App.vue       # 五模式切换（对话/RAG/ReAct/PSE/长时任务）
+│       ├── App.vue       # Five-mode switching (Chat/RAG/ReAct/PSE/Long Tasks)
 │       └── components/   # MessageList / InputArea / RuntimePanel / LongTaskPanel
 └── src/main/
     ├── java/com/example/springharness/
     │   ├── controller/   # Chat / Agent / Rag / Pse / LongTask / Tools / Models
-    │   ├── agent/        # ReActAgentService（ReAct 模式）
-    │   ├── pse/          # PSE 协作（Planner/Specialist/Evaluator/Orchestrator/Soul/TokenUsage）
-    │   ├── task/         # 长时任务（线程池 + SQLite）
-    │   ├── rag/          # RAG（向量库 + 切分 + Rerank）
-    │   ├── sandbox/      # DockerSandboxExecutor（8 语言沙箱）
+    │   ├── agent/        # ReActAgentService (ReAct mode)
+    │   ├── pse/          # PSE collaboration (Planner/Specialist/Evaluator/Orchestrator/Soul/TokenUsage)
+    │   ├── task/         # Long-running tasks (thread pool + SQLite)
+    │   ├── rag/          # RAG (vector store + chunking + Rerank)
+    │   ├── sandbox/      # DockerSandboxExecutor (8-language sandbox)
     │   ├── service/      # Prompt / MultiModel / Skill / AgnesRateLimiter
-    │   ├── tool/         # 7 个本地工具（calculator/query_stock/execute_code/skill_run/search_knowledge...）
-    │   └── config/       # ToolConfig（工具注册）
+    │   ├── tool/         # 7 local tools (calculator/query_stock/execute_code/skill_run/search_knowledge...)
+    │   └── config/       # ToolConfig (tool registration)
     └── resources/application.yml
 ```
 
-## 快速开始
+## Quick Start
 
-### 1. 获取 API Key
+### 1. Get API Key
 
-前往 [阿里云百炼控制台](https://bailian.console.aliyun.com/) → API-KEY 管理，创建并复制 Key。
+Go to [Alibaba Cloud Bailian Console](https://bailian.console.aliyun.com/) → API-KEY Management, create and copy the Key.
 
-### 2. 配置 .env
+### 2. Configure .env
 
 ```bash
 cd work/spring/spring-harness
 cp .env.example .env
-# 编辑 .env，填入 DASHSCOPE_API_KEY
+# Edit .env, fill in DASHSCOPE_API_KEY
 ```
 
-`.env` 已加入 `.gitignore`，不会提交密钥。也可用环境变量 `export DASHSCOPE_API_KEY=sk-xxx` 覆盖。
+`.env` is already in `.gitignore`, so secrets won't be committed. You can also override with environment variable `export DASHSCOPE_API_KEY=sk-xxx`.
 
-### 3. 启动
+### 3. Start
 
 ```bash
-# 开发模式：同时启动后端(8080)和前端(5174)，自动安装前端依赖
+# Dev mode: start both backend (8080) and frontend (5174) simultaneously, auto-install frontend dependencies
 make dev
 
-# 或分别启动
-make run-bg          # 后端后台启动
-make frontend-dev    # 前端开发服务器
+# Or start separately
+make run-bg          # Backend in background
+make frontend-dev    # Frontend dev server
 ```
 
-启动后访问 **http://localhost:5174** 打开聊天界面。
-前端通过 Vite 开发代理将 `/chat` 请求转发到后端 `http://localhost:8080`。
+After startup, visit **http://localhost:5174** to open the chat interface.
+The frontend proxies `/chat` requests to the backend `http://localhost:8080` through Vite dev proxy.
 
-### 4. 调用接口
+### 4. Call API
 
 ```bash
-# 非流式：一次返回完整回答
-curl "http://localhost:8080/chat?message=用一句话介绍Spring%20AI%20Alibaba"
+# Non-streaming: return complete answer at once
+curl "http://localhost:8080/chat?message=Introduce%20Spring%20AI%20Alibaba%20in%20one%20sentence"
 
-# 流式（SSE）：逐字返回
-curl -N "http://localhost:8080/chat/stream?message=讲一个程序员笑话"
+# Streaming (SSE): return word by word
+curl -N "http://localhost:8080/chat/stream?message=Tell%20a%20programmer%20joke"
 ```
 
-## Makefile 命令
+## Makefile Commands
 
-| 命令 | 说明 |
+| Command | Description |
 | --- | --- |
-| `make help` | 显示所有命令（默认） |
-| `make run` | 前台启动应用 |
-| `make run-bg` | 后台启动，日志写入 app.log |
-| `make stop` | 停止后台应用 |
-| `make restart` | 停止并重新启动 |
-| `make compile` | 编译 |
-| `make package` | 打包（跳过测试） |
-| `make test` | 运行测试 |
-| `make clean` | 清理构建产物 |
-| `make health` | 健康检查（调用 /chat） |
+| `make help` | Show all commands (default) |
+| `make run` | Start application in foreground |
+| `make run-bg` | Start in background, logs written to app.log |
+| `make stop` | Stop background application |
+| `make restart` | Stop and restart |
+| `make compile` | Compile |
+| `make package` | Package (skip tests) |
+| `make test` | Run tests |
+| `make clean` | Clean build artifacts |
+| `make health` | Health check (call /chat) |
 
-## 接口说明
+## API Reference
 
-| 方法 | 路径 | 说明 |
+| Method | Path | Description |
 | --- | --- | --- |
-| GET | `/chat?message=xxx` | 非流式，返回完整回答 |
-| GET | `/chat/stream?message=xxx` | 流式，SSE 逐字返回 |
-| GET | `/chat/agent?message=xxx` | Agent 模式，自动工具调用，返回回答 + 工具调用过程 |
-| GET | `/chat/rag?message=xxx` | RAG 模式，基于知识库检索增强回答 |
-| POST | `/rag/documents` | 上传文档（multipart/form-data，字段名 file） |
-| GET | `/rag/documents` | 列出所有已索引文档 |
-| DELETE | `/rag/documents/{docId}` | 删除文档及其所有向量块 |
-| GET | `/rag/stats` | 文档统计信息 |
-| GET | `/rag/search?query=xxx&topK=5` | 语义检索（调试用） |
-| GET | `/api/memory` | 长期记忆列表 + 开关状态 |
-| POST | `/api/memory/toggle` | 开启/关闭记忆 `{"enabled": true}` |
-| POST | `/api/memory/clear` | 清空全部记忆 |
-| DELETE | `/api/memory/{id}` | 删除单条记忆 |
-| GET | `/api/examples?mode=chat\|agent\|pse\|rag\|longtask` | 按模式 + 当前环境能力动态生成示例任务 |
+| GET | `/chat?message=xxx` | Non-streaming, return complete answer |
+| GET | `/chat/stream?message=xxx` | Streaming, SSE word by word |
+| GET | `/chat/agent?message=xxx` | Agent mode, automatic tool calling, return answer + tool call process |
+| GET | `/chat/rag?message=xxx` | RAG mode, retrieval-augmented answer based on knowledge base |
+| POST | `/rag/documents` | Upload document (multipart/form-data, field name file) |
+| GET | `/rag/documents` | List all indexed documents |
+| DELETE | `/rag/documents/{docId}` | Delete document and all its vector chunks |
+| GET | `/rag/stats` | Document statistics |
+| GET | `/rag/search?query=xxx&topK=5` | Semantic search (for debugging) |
+| GET | `/api/memory` | Long-term memory list + toggle status |
+| POST | `/api/memory/toggle` | Enable/disable memory `{"enabled": true}` |
+| POST | `/api/memory/clear` | Clear all memories |
+| DELETE | `/api/memory/{id}` | Delete single memory |
+| GET | `/api/examples?mode=chat\|agent\|pse\|rag\|longtask` | Dynamically generate example tasks based on mode + current environment capabilities |
 
-### 长期记忆（Memory）
+### Long-term Memory (Memory)
 
-自动从对话中抽取**稳定的用户偏好 / 事实 / 目标**（如「我喜欢用中文」「我常住上海」），存入 SQLite，在后续对话 / ReAct / PSE 中按当前问题检索并注入 System prompt，实现跨会话记忆。
+Automatically extract **stable user preferences / facts / goals** from conversations (e.g., "I prefer Chinese", "I live in Shanghai"), store in SQLite, retrieve based on current question in subsequent conversations / ReAct / PSE, and inject into System prompt, achieving cross-session memory.
 
-- 抽取前做**信号词预过滤**（命中「我喜欢/我是/我住在/我的目标」等才调用 LLM），控制成本与限流
-- 记忆按 `偏好 / 事实 / 目标` 分类，关键词 LIKE 检索 + 访问频率排序，取前 `MEMORY_TOP_K` 条注入
-- 管理：右侧 Runtime 面板 → Memory 卡片可查看 / 开关 / 清空 / 删除单条
+- **Signal word pre-filtering** before extraction (only call LLM when hitting "I prefer/I am/I live in/my goal", etc.), controlling cost and rate limiting
+- Memory categorized by `preference / fact / goal`, keyword LIKE search + access frequency sorting, take top `MEMORY_TOP_K` items for injection
+- Management: Right Runtime panel → Memory card to view / toggle / clear / delete single item
 
-**配置项**（`.env`）：
+**Configuration** (`.env`):
 
-| 变量 | 默认 | 说明 |
+| Variable | Default | Description |
 | --- | --- | --- |
-| `MEMORY_ENABLED` | `true` | 是否启用长期记忆 |
-| `MEMORY_EXTRACT_ENABLED` | `true` | 是否启用抽取（信号词命中才调 LLM） |
-| `MEMORY_TOP_K` | `5` | 每次注入的记忆条数 |
-| `MEMORY_MAX_ITEMS` | `200` | 记忆上限，超出删除最旧 |
-| `MEMORY_MODEL` | 空 | 抽取模型，留空跟随主模型 |
-| `MEMORY_CHAT_ENABLED` | `false` | 会话窗口记忆（方案 B）：按 conversationId 后端维护多轮窗口 |
-| `MEMORY_CHAT_WINDOW` | `20` | 会话窗口大小 |
+| `MEMORY_ENABLED` | `true` | Enable long-term memory |
+| `MEMORY_EXTRACT_ENABLED` | `true` | Enable extraction (call LLM only when signal words hit) |
+| `MEMORY_TOP_K` | `5` | Number of memories injected each time |
+| `MEMORY_MAX_ITEMS` | `200` | Memory upper limit, delete oldest when exceeded |
+| `MEMORY_MODEL` | empty | Extraction model, leave empty to follow main model |
+| `MEMORY_CHAT_ENABLED` | `false` | Session window memory (Plan B): maintain multi-turn window by conversationId on backend |
+| `MEMORY_CHAT_WINDOW` | `20` | Session window size |
 
-> 会话窗口记忆（方案 B）默认关闭：当前前端已通过 `messages` 参数回传历史，方案 B 供需要后端统一管理窗口的场景开启（`/chat` 与 `/chat/stream` 传入 `conversationId` 即生效）。
+> Session window memory (Plan B) is disabled by default: the current frontend already passes back history through `messages` parameter. Plan B is for scenarios requiring backend unified window management (`/chat` and `/chat/stream` pass `conversationId` to take effect).
 
-### Agent 模式示例
+### Agent Mode Example
 
 ```bash
-curl "http://localhost:8080/chat/agent?message=123乘以456等于多少"
+curl "http://localhost:8080/chat/agent?message=What%20is%20123%20times%20456"
 ```
 
-返回：
+Response:
 ```json
 {
-  "answer": "123 乘以 456 等于 56088。",
+  "answer": "123 times 456 equals 56088.",
   "toolCalls": [
     {
       "name": "calculator",
@@ -179,112 +179,112 @@ curl "http://localhost:8080/chat/agent?message=123乘以456等于多少"
 }
 ```
 
-### 内置工具
+### Built-in Tools
 
-**本地工具 7 个**（Agent / PSE / 长时任务均可调用）：
+**7 Local Tools** (callable by Agent / PSE / Long-running Tasks):
 
-| 工具名 | 功能 | 触发示例 |
+| Tool Name | Function | Trigger Example |
 | --- | --- | --- |
-| `calculator` | 加减乘除 | "123乘以456等于多少" |
-| `get_datetime` | 当前日期时间 | "现在几点了"、"今天星期几" |
-| `query_stock` | 股票实时行情 | "苹果股票多少钱"、"AAPL 股价" |
-| `query_exchange_rate` | 汇率换算 | "美元兑人民币汇率" |
-| `execute_code` | Docker 沙箱执行 8 种语言代码 | "用Python算斐波那契第20项" |
-| `skill_run` | 加载技能指令（code-review / weekly-investment 等） | "用代码审查技能审查XX.java" |
-| `search_knowledge` | RAG 知识库检索（Rerank 精排） | "文档中提到了哪些向量数据库" |
+| `calculator` | Arithmetic operations | "What is 123 times 456" |
+| `get_datetime` | Current date and time | "What time is it now", "What day is today" |
+| `query_stock` | Stock real-time quotes | "How much is Apple stock", "AAPL price" |
+| `query_exchange_rate` | Exchange rate conversion | "USD to CNY exchange rate" |
+| `execute_code` | Docker sandbox execution of 8 languages code | "Calculate Fibonacci 20th term with Python" |
+| `skill_run` | Load skill instructions (code-review / weekly-investment, etc.) | "Review XX.java with code review skill" |
+| `search_knowledge` | RAG knowledge base retrieval (Rerank precision) | "What vector databases are mentioned in the document" |
 
-**MCP 工具 16 个**：`filesystem`（14 个文件操作）+ `portfolio-check`（投资数据体检）+ `pse-review`（深度投资周报）。
+**16 MCP Tools**: `filesystem` (14 file operations) + `portfolio-check` (investment data health check) + `pse-review` (deep investment weekly report).
 
-> 股票行情（Yahoo Finance / Finnhub 实时，带限流与重试）、汇率来自公开接口。敏感 API Key 一律放 `.env`（已 gitignore），勿写进对话或代码。
+> Stock quotes (Yahoo Finance / Finnhub real-time, with rate limiting and retry), exchange rates from public APIs. Sensitive API Keys always go in `.env` (gitignored), do not write into conversations or code.
 
-### 工具调用原理
+### Tool Calling Principle
 
-1. 用户提问 → LLM 判断是否需要调用工具
-2. LLM 返回工具名 + 入参（JSON）
-3. Spring AI 的 `ToolCallingAdvisor` 自动执行对应 `FunctionToolCallback`
-4. 工具结果喂回 LLM，LLM 基于结果生成自然语言回答
-5. `ToolCallRecorder`（ThreadLocal）记录每次工具调用的入参、出参、耗时
+1. User question → LLM determines whether tool calling is needed
+2. LLM returns tool name + parameters (JSON)
+3. Spring AI's `ToolCallingAdvisor` automatically executes corresponding `FunctionToolCallback`
+4. Tool results fed back to LLM, LLM generates natural language answer based on results
+5. `ToolCallRecorder` (ThreadLocal) records input, output, duration of each tool call
 
-### RAG 知识库模式
+### RAG Knowledge Base Mode
 
-RAG（Retrieval-Augmented Generation，检索增强生成）：上传文档后，LLM 基于文档内容回答问题，避免幻觉。
+RAG (Retrieval-Augmented Generation): After uploading documents, LLM answers questions based on document content, avoiding hallucination.
 
-**使用流程**：
-1. 前端切换到「RAG 知识库」模式，点击「上传文档」选择文件（支持 PDF、TXT、MD、JSON、Java、Python 等文本格式）
-2. 后端自动完成：文档加载 → 文本切分（TokenTextSplitter）→ 向量化（DashScope text-embedding-v2）→ 存入向量库（SimpleVectorStore）
-3. 在输入框提问，LLM 自动检索相关文档片段并基于内容回答
+**Usage Flow**:
+1. Switch to "RAG Knowledge Base" mode in frontend, click "Upload Document" to select file (supports PDF, TXT, MD, JSON, Java, Python and other text formats)
+2. Backend automatically completes: document loading → text chunking (TokenTextSplitter) → vectorization (DashScope text-embedding-v2) → store in vector store (SimpleVectorStore)
+3. Ask questions in input box, LLM automatically retrieves relevant document fragments and answers based on content
 
-**命令行示例**：
+**CLI Example**:
 ```bash
-# 上传文档
+# Upload document
 curl -X POST -F "file=@knowledge.pdf" http://localhost:8080/rag/documents
 
-# 列出文档
+# List documents
 curl http://localhost:8080/rag/documents
 
-# RAG 问答
-curl "http://localhost:8080/chat/rag?message=文档中提到了哪些向量数据库"
+# RAG Q&A
+curl "http://localhost:8080/chat/rag?message=What%20vector%20databases%20are%20mentioned%20in%20the%20document"
 ```
 
-**RAG 技术栈**：
-| 组件 | 实现 | 说明 |
+**RAG Tech Stack**:
+| Component | Implementation | Description |
 | --- | --- | --- |
-| 向量库 | `SimpleVectorStore` | 内存向量库，开发演示用；生产可切换 Redis/PGVector/Milvus |
-| Embedding | DashScope `qwen3.7-text-embedding` | 100 万 Token 免费，1024 维 |
-| 重排序 | DashScope `qwen3.7-text-rerank` | RAG 检索后精排（有免费额度） |
-| 文本切分 | `ParagraphTextSplitter` / `MarkdownTextSplitter` / `TokenTextSplitter` | DOC/PDF 按段落、Markdown 按结构、其他按 token |
-| 检索增强 | `RetrievalAugmentationAdvisor` | Spring AI 1.1 RAG Advisor，自动检索+注入 Prompt |
-| 文档加载 | `PagePdfDocumentReader` + 纯文本读取 | PDF 按页读取，其他格式直接读取文本 |
+| Vector Store | `SimpleVectorStore` | In-memory vector store, for dev demo; production can switch to Redis/PGVector/Milvus |
+| Embedding | DashScope `qwen3.7-text-embedding` | 1 million Token free, 1024 dimensions |
+| Rerank | DashScope `qwen3.7-text-rerank` | Precision ranking after RAG retrieval (with free quota) |
+| Text Chunking | `ParagraphTextSplitter` / `MarkdownTextSplitter` / `TokenTextSplitter` | DOC/PDF by paragraph, Markdown by structure, others by token |
+| Retrieval Augmentation | `RetrievalAugmentationAdvisor` | Spring AI 1.1 RAG Advisor, auto retrieval + prompt injection |
+| Document Loading | `PagePdfDocumentReader` + plain text reading | PDF read by page, other formats read text directly |
 
-> **RAG 通用化**：`search_knowledge` 工具已注册到 Agent / PSE / 长时任务，三类模式都能检索知识库。切换向量库仅需替换 `RagConfig` 中的 `VectorStore` Bean，RagService 和 Controller 无需改动。
+> **RAG Generalization**: `search_knowledge` tool is registered to Agent / PSE / Long-running Tasks, all three modes can retrieve knowledge base. Switching vector store only requires replacing `VectorStore` Bean in `RagConfig`, RagService and Controller need no changes.
 
-## Docker 代码沙箱
+## Docker Code Sandbox
 
-`execute_code` 工具在隔离的 Docker 容器中执行代码，支持 **8 种语言**：
+`execute_code` tool executes code in isolated Docker containers, supporting **8 languages**:
 
-| 语言 | 镜像 | 说明 |
+| Language | Image | Description |
 | --- | --- | --- |
-| python | python:3.11-slim | 解释执行 |
-| javascript | node:20-slim | 解释执行 |
-| shell | alpine:3.19 | 解释执行 |
-| java | eclipse-temurin:17-jdk | `java Main.java` 源码模式 |
-| go | golang:1.22-alpine | `go run`（缓存重定向 /tmp） |
-| rust | rust:1.75-alpine | `rustc` 编译后运行 |
-| c / cpp | sandbox-gcc:alpine（自建） | `gcc` / `g++` 编译后运行 |
+| python | python:3.11-slim | Interpreted execution |
+| javascript | node:20-slim | Interpreted execution |
+| shell | alpine:3.19 | Interpreted execution |
+| java | eclipse-temurin:17-jdk | `java Main.java` source mode |
+| go | golang:1.22-alpine | `go run` (cache redirected to /tmp) |
+| rust | rust:1.75-alpine | `rustc` compile then run |
+| c / cpp | sandbox-gcc:alpine (self-built) | `gcc` / `g++` compile then run |
 
-**安全隔离**：每次执行独立容器（`--rm` 自动销毁）、`--network none` 禁用网络、`--read-only` 只读根文件系统（仅 /tmp 可写且可执行）、内存 512MB / 1 核 / 100 进程限制、超时自动 kill、输出 100KB 截断。
+**Security Isolation**: Each execution in independent container (`--rm` auto-destroy), `--network none` disable network, `--read-only` read-only root filesystem (only /tmp writable and executable), memory 512MB / 1 core / 100 process limit, timeout auto-kill, output 100KB truncation.
 
-沙箱开关在 `.env`：`SANDBOX_ENABLED=true`。c/cpp 使用自建镜像 `docker/sandbox-gcc.Dockerfile`（alpine + gcc/g++，209MB，musl libc 对标准程序完全兼容）。
+Sandbox toggle in `.env`: `SANDBOX_ENABLED=true`. c/cpp uses self-built image `docker/sandbox-gcc.Dockerfile` (alpine + gcc/g++, 209MB, musl libc fully compatible with standard programs).
 
-## PSE 协作与长时任务
+## PSE Collaboration and Long-running Tasks
 
-- **PSE 协作**：Planner 将任务分解为子任务 → Specialist 并行执行（可调用工具）→ Evaluator 评审验收，失败自动重试；支持整体评审与最终交付。`PSE_TIMEOUT_SECONDS` 控制整体超时（默认 90s，.env 已设 600s）。
-- **长时任务**：后台线程池执行（可并发多任务），SQLite（`data/tasks.db`）持久化，重启后自动恢复；记录 token 消耗、执行日志、执行过程（可复制错误报告）、执行结果 Markdown 渲染。
+- **PSE Collaboration**: Planner decomposes tasks into subtasks → Specialist executes in parallel (can call tools) → Evaluator reviews and accepts, failure auto-retry; supports overall review and final delivery. `PSE_TIMEOUT_SECONDS` controls overall timeout (default 90s, .env set to 600s).
+- **Long-running Tasks**: Background thread pool execution (can run multiple tasks concurrently), SQLite (`data/tasks.db`) persistence, auto-recover after restart; records token consumption, execution logs, execution process (copyable error report), execution result Markdown rendering.
 
-## 常用模型
+## Common Models
 
-| 模型名 | 定位 |
+| Model Name | Positioning |
 | --- | --- |
-| `qwen-plus` | DashScope 均衡型，默认推荐 |
-| `agnes-2.0-flash` | Agnes 免费模型（默认，自动限流） |
-| `glm-5.2` | 智谱模型（经 DashScope 网关） |
-| `deepseek` | DeepSeek（付费、稳定） |
+| `qwen-plus` | DashScope balanced, default recommended |
+| `agnes-2.0-flash` | Agnes free model (default, auto rate limiting) |
+| `glm-5.2` | Zhipu model (via DashScope gateway) |
+| `deepseek` | DeepSeek (paid, stable) |
 
-模型通过 `.env` 的 `DASHSCOPE_MODEL` / Agnes 配置切换。完整列表见 [百炼模型列表](https://help.aliyun.com/zh/model-studio/models)。
+Models switched through `.env`'s `DASHSCOPE_MODEL` / Agnes configuration. Full list see [Bailian Model List](https://help.aliyun.com/zh/model-studio/models).
 
-## 常见问题
+## FAQ
 
-- **启动报错 API Key 相关**：未配置 `DASHSCOPE_API_KEY`，按上方步骤配置。
-- **报错 401 / InvalidApiKey**：Key 错误或已过期，检查百炼控制台。
-- **报错 400 / model not found**：`DASHSCOPE_MODEL` 与账号开通的模型不匹配，换用已开通的模型。
-- **想换回 OpenAI 兼容协议**：把依赖换成 `spring-ai-starter-model-openai`，配置 `spring.ai.openai.base-url` 即可，Controller 代码无需改动（Spring AI 抽象层屏蔽了差异）。
+- **Startup error related to API Key**: `DASHSCOPE_API_KEY` not configured, configure according to steps above.
+- **Error 401 / InvalidApiKey**: Key error or expired, check Bailian console.
+- **Error 400 / model not found**: `DASHSCOPE_MODEL` doesn't match models activated on account, switch to an activated model.
+- **Want to switch back to OpenAI compatible protocol**: Replace dependency with `spring-ai-starter-model-openai`, configure `spring.ai.openai.base-url`, Controller code needs no changes (Spring AI abstraction layer shields differences).
 
-## 下一步可扩展
+## Next Steps for Extension
 
-- 聊天记忆（`ChatMemory` / 向量库）
-- 多轮对话（`Advisor` + Message History）
-- RAG（`VectorStore` + `QuestionAnswerAdvisor`，支持 PGVector / Redis / Milvus 等 25+ 向量库）
-- 结构化输出（Bean 输出 / JSON Schema 约束）
-- Agent Framework（Spring AI Alibaba `ReactAgent` + Graph 运行时，多 Agent 编排）
-- MCP 集成（Spring AI 1.1 原生支持 Model Context Protocol，可封装工具为 MCP Server）
-- 多模态（图片理解 `qwen-vl`、语音识别/合成）
+- Chat memory (`ChatMemory` / vector store)
+- Multi-turn conversation (`Advisor` + Message History)
+- RAG (`VectorStore` + `QuestionAnswerAdvisor`, supports PGVector / Redis / Milvus and 25+ other vector stores)
+- Structured output (Bean output / JSON Schema constraints)
+- Agent Framework (Spring AI Alibaba `ReactAgent` + Graph runtime, multi-Agent orchestration)
+- MCP integration (Spring AI 1.1 natively supports Model Context Protocol, can encapsulate tools as MCP Server)
+- Multimodal (image understanding `qwen-vl`, speech recognition/synthesis)

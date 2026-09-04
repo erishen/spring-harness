@@ -11,12 +11,11 @@
       <div class="card-header" @click="toolsExpanded = !toolsExpanded">
         <div class="card-title-group">
           <span class="card-arrow" :class="{ expanded: toolsExpanded }">▶</span>
-          <span class="card-icon">🔧</span>
-          <span class="card-title">Tools</span>
-        </div>
-        <div class="card-stats">
-          <span class="stat-badge local">{{ localToolCount }} 本地</span>
-          <span class="stat-badge mcp">{{ mcpToolCount }} MCP</span>
+          <span class="card-icon">🧰</span>
+          <div class="card-titles">
+            <span class="card-title">Tools</span>
+            <span class="card-sub">本地 {{ localToolCount }} · MCP {{ mcpToolCount }}</span>
+          </div>
         </div>
       </div>
 
@@ -64,8 +63,11 @@
       <div class="card-header" @click="ragExpanded = !ragExpanded">
         <div class="card-title-group">
           <span class="card-arrow" :class="{ expanded: ragExpanded }">▶</span>
-          <span class="card-icon">🔍</span>
-          <span class="card-title">最近知识库检索</span>
+          <span class="card-icon">🧠</span>
+          <div class="card-titles">
+            <span class="card-title">Knowledge</span>
+            <span class="card-sub">RAG 检索链路</span>
+          </div>
         </div>
         <span class="count-badge" v-if="trace && trace.exists">{{ trace.trace.durationMs }}ms</span>
       </div>
@@ -101,8 +103,11 @@
       <div class="card-header" @click="skillsExpanded = !skillsExpanded">
         <div class="card-title-group">
           <span class="card-arrow" :class="{ expanded: skillsExpanded }">▶</span>
-          <span class="card-icon">📚</span>
-          <span class="card-title">Skills</span>
+          <span class="card-icon">⚡</span>
+          <div class="card-titles">
+            <span class="card-title">Skills</span>
+            <span class="card-sub">技能库</span>
+          </div>
         </div>
         <span class="count-badge">{{ skills.length }}</span>
       </div>
@@ -125,8 +130,11 @@
       <div class="card-header" @click="statusExpanded = !statusExpanded">
         <div class="card-title-group">
           <span class="card-arrow" :class="{ expanded: statusExpanded }">▶</span>
-          <span class="card-icon">📊</span>
-          <span class="card-title">服务状态</span>
+          <span class="card-icon">🛡️</span>
+          <div class="card-titles">
+            <span class="card-title">Service</span>
+            <span class="card-sub">MCP · 代码沙箱</span>
+          </div>
         </div>
       </div>
 
@@ -364,6 +372,23 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+}
+.card-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.card-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+.card-sub {
+  font-size: 10px;
+  color: #9ca3af;
+  white-space: nowrap;
 }
 .card-arrow {
   font-size: 9px;
@@ -373,11 +398,6 @@ onBeforeUnmount(() => {
 }
 .card-arrow.expanded { transform: rotate(90deg); }
 .card-icon { font-size: 14px; }
-.card-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-}
 .card-stats {
   display: flex;
   gap: 4px;

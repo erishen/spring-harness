@@ -212,6 +212,32 @@ public class RagService {
     }
 
     /**
+     * 清空所有文档及其向量数据（GDPR 数据删除用）。
+     *
+     * @return 被删除的文档数量
+     */
+    public int clearAll() {
+        int count = documentRegistry.size();
+        // 收集所有 chunkId 并从向量库删除
+        List<String> allChunkIds = documentRegistry.values().stream()
+                .filter(info -> info.chunkIds() != null)
+                .flatMap(info -> info.chunkIds().stream())
+                .toList();
+        if (!allChunkIds.isEmpty()) {
+            try {
+                vectorStore.delete(allChunkIds);
+            } catch (Exception e) {
+                log.warn("清空向量库时部分删除失败: {}", e.getMessage());
+            }
+        }
+        documentRegistry.clear();
+        documentContents.clear();
+        persist();
+        log.info("[隐私保护] 已清空所有 RAG 文档，共 {} 个", count);
+        return count;
+    }
+
+    /**
      * 语义检索：返回最相关的 topK 个文本片段。
      */
     public List<Document> search(String query, int topK) {

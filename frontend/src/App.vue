@@ -19,6 +19,7 @@
       <span class="model">AI Agent 框架 · Spring AI + Vue 3</span>
       <div class="header-actions">
         <button class="header-btn" @click="exportChat" title="导出聊天记录为 Markdown">导出</button>
+        <button class="header-btn" @click="showPrivacy = true" title="隐私与数据管理（GDPR）">隐私</button>
         <button class="header-btn danger" @click="clearChat" title="清空当前会话">清空</button>
       </div>
     </header>
@@ -77,6 +78,17 @@
 
     <!-- 模型管理浮层 -->
     <ModelManager :visible="showModelManager" @close="showModelManager = false" @changed="loadModels" />
+
+    <!-- 隐私管理浮层 -->
+    <div v-if="showPrivacy" class="modal-overlay" @click.self="showPrivacy = false">
+      <div class="modal-content privacy-modal">
+        <div class="modal-header">
+          <h3>隐私与数据管理</h3>
+          <button class="modal-close" @click="showPrivacy = false">×</button>
+        </div>
+        <PrivacyPanel />
+      </div>
+    </div>
     </div>
   </div>
 </template>
@@ -91,6 +103,7 @@ import ModelSettings from './components/ModelSettings.vue'
 import SessionList from './components/SessionList.vue'
 import LongTaskPanel from './components/LongTaskPanel.vue'
 import ModelManager from './components/ModelManager.vue'
+import PrivacyPanel from './components/PrivacyPanel.vue'
 import { useSessions } from './composables/useSessions.js'
 
 // 多会话管理
@@ -126,6 +139,7 @@ const lastUserMessage = ref('')
 const models = ref([])
 const selectedModel = ref(localStorage.getItem(STORAGE_MODEL_KEY) || 'agnes-2.0-flash')
 const showModelManager = ref(false)
+const showPrivacy = ref(false)
 
 // 模型参数设置（temperature、max_tokens、top_p、systemPrompt）
 const modelSettings = ref({
@@ -842,5 +856,61 @@ header h1 { font-size: 16px; color: #1f2937; }
 .code-block-wrapper pre:hover::-webkit-scrollbar-thumb,
 .code-block-wrapper pre:active::-webkit-scrollbar-thumb {
   background: #d1d5db;
+}
+
+/* 隐私管理浮层 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content.privacy-modal {
+  background: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1a1b1c;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0 4px;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: #1a1b1c;
 }
 </style>

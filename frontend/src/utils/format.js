@@ -40,21 +40,55 @@ export function roleDisplayName(role) {
   return names[role] || role
 }
 
-/** 格式化工具入参：对象 → JSON，字符串保留 */
+/** 格式化工具入参：对象 → JSON，JSON 字符串自动缩进 */
 export function formatInput(input) {
   if (!input) return '(无)'
-  if (typeof input === 'string') return input
+  if (typeof input === 'string') {
+    // 尝试解析为 JSON 字符串并格式化
+    const trimmed = input.trim()
+    if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+      try {
+        const obj = JSON.parse(trimmed)
+        return JSON.stringify(obj, null, 2)
+      } catch {
+        // 不是有效 JSON，原样返回
+      }
+    }
+    return input
+  }
   try { return JSON.stringify(input, null, 2) } catch { return String(input) }
 }
 
-/** 格式化工具结果：解析 Response[...] 包装，否则原样 */
+/** 格式化工具结果：解析 Response[...] 包装，JSON 字符串自动缩进 */
 export function formatOutput(output) {
   if (!output) return '(无)'
   if (typeof output !== 'string') {
     try { return JSON.stringify(output, null, 2) } catch { return String(output) }
   }
+  // 解析 Response[...] 包装（Spring AI ToolResponse 格式）
   const match = output.match(/Response\[(.*)\]/s)
-  if (match) return match[1].replace(/, /g, '\n')
+  if (match) {
+    const inner = match[1]
+    // 尝试解析为 JSON 并格式化
+    try {
+      const obj = JSON.parse(inner)
+      return JSON.stringify(obj, null, 2)
+    } catch {
+      return inner.replace(/, /g, '\n')
+    }
+  }
+  // 尝试解析为 JSON 字符串并格式化
+  const trimmed = output.trim()
+  if ((trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
+    try {
+      const obj = JSON.parse(trimmed)
+      return JSON.stringify(obj, null, 2)
+    } catch {
+      // 不是有效 JSON，原样返回
+    }
+  }
   return output
 }
 

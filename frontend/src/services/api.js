@@ -175,6 +175,36 @@ export async function getSkills() {
   return res.json()
 }
 
+// ==================== 长期记忆 API ====================
+
+/** 获取记忆列表与状态 */
+export async function getMemory() {
+  const res = await request('/api/memory')
+  return res.json()
+}
+
+/** 开启/关闭记忆 */
+export async function toggleMemory(enabled) {
+  const res = await request('/api/memory/toggle', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled })
+  })
+  return res.json()
+}
+
+/** 清空全部记忆 */
+export async function clearMemory() {
+  const res = await request('/api/memory/clear', { method: 'POST' })
+  return res.json()
+}
+
+/** 删除单条记忆 */
+export async function deleteMemory(id) {
+  const res = await request('/api/memory/' + encodeURIComponent(id), { method: 'DELETE' })
+  return res.json()
+}
+
 // ==================== SSE 解析工具 ====================
 
 /**
@@ -233,5 +263,9 @@ export default {
   getMcpStatus,
   getSandboxStatus,
   getSkills,
+  getMemory,
+  toggleMemory,
+  clearMemory,
+  deleteMemory,
   parseSSE
 }

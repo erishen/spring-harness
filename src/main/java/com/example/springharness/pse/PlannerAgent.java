@@ -1,5 +1,6 @@
 package com.example.springharness.pse;
 
+import com.example.springharness.memory.MemoryService;
 import com.example.springharness.service.MultiModelService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -35,17 +36,20 @@ public class PlannerAgent {
     private final ToolDescriptionService toolDescriptionService;
     private final TokenUsageTracker tokenUsageTracker;
     private final SoulService soulService;
+    private final MemoryService memoryService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${MAX_TOKENS:4096}")
     private int maxTokens;
 
     public PlannerAgent(MultiModelService multiModelService, ToolDescriptionService toolDescriptionService,
-                        TokenUsageTracker tokenUsageTracker, SoulService soulService) {
+                        TokenUsageTracker tokenUsageTracker, SoulService soulService,
+                        MemoryService memoryService) {
         this.multiModelService = multiModelService;
         this.toolDescriptionService = toolDescriptionService;
         this.tokenUsageTracker = tokenUsageTracker;
         this.soulService = soulService;
+        this.memoryService = memoryService;
     }
 
     /**
@@ -83,7 +87,7 @@ public class PlannerAgent {
                 ]
 
                 只返回 JSON 数组，不要返回 markdown 代码块，不要返回任何解释文字。
-                """.formatted(toolList);
+                """.formatted(toolList) + memoryService.buildMemoryContext(userRequest);
 
         Prompt prompt = buildPrompt(systemPrompt, "用户需求：" + userRequest, model);
         var response = multiModelService.getChatModel(model).call(prompt);
@@ -91,6 +95,7 @@ public class PlannerAgent {
         String responseText = response.getResult().getOutput().getText();
 
         // 提取 JSON（LLM 可能返回 markdown 代码块）
+        memoryService.extractAndStore(userRequest, "pse");
         return extractJson(responseText);
     }
 
@@ -177,7 +182,7 @@ public class PlannerAgent {
                 - 不要提及内部的 Planner/Specialist/Evaluator 角色
 
                 用中文回答，直接给最终答案。
-                """;
+                """ + memoryService.buildMemoryContext(userRequest);
 
         String userContent = String.format("""
                 用户原始需求：%s

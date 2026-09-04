@@ -134,6 +134,42 @@
       </div>
     </div>
 
+    <!-- 长期记忆 -->
+    <div class="panel-card">
+      <div class="card-header" @click="memoryExpanded = !memoryExpanded">
+        <div class="card-title-group">
+          <span class="card-arrow" :class="{ expanded: memoryExpanded }">▶</span>
+          <span class="card-icon">💾</span>
+          <div class="card-titles">
+            <span class="card-title">Memory</span>
+            <span class="card-sub">{{ memory.enabled ? '长期记忆 · ' + memory.count + ' 条' : '已关闭' }}</span>
+          </div>
+        </div>
+        <label class="mem-toggle" @click.stop :title="memory.enabled ? '关闭记忆' : '开启记忆'">
+          <input type="checkbox" :checked="memory.enabled" @change="onToggleMemory($event.target.checked)" />
+          <span class="toggle-slider" :class="{ on: memory.enabled }"></span>
+        </label>
+      </div>
+
+      <div class="card-body" v-show="memoryExpanded">
+        <div v-if="memory.enabled && memory.items && memory.items.length" class="memory-list">
+          <div class="memory-item" v-for="item in memory.items.slice(0, 8)" :key="item.id">
+            <div class="memory-item-head">
+              <span class="memory-cat" :class="item.category || 'fact'">{{ item.categoryLabel || (item.category === 'preference' ? '偏好' : item.category === 'goal' ? '目标' : '事实') }}</span>
+              <button class="memory-del" @click="onDeleteMemory(item.id)" title="删除这条记忆">✕</button>
+            </div>
+            <div class="memory-content">{{ item.content }}</div>
+          </div>
+        </div>
+        <div v-else-if="memory.enabled" class="memory-empty">还没有记忆。在对话中说出偏好/事实（如「我喜欢简洁回答」）即可自动记录。</div>
+        <div v-else class="memory-empty">记忆已关闭。</div>
+        <div v-if="memory.count > 8" class="memory-more">仅显示前 8 条，共 {{ memory.count }} 条</div>
+        <div class="memory-actions" v-if="memory.enabled && memory.count">
+          <button class="mem-clear-btn" @click="onClearMemory">清空记忆</button>
+        </div>
+      </div>
+    </div>
+
     <!-- 服务状态 -->
     <div class="panel-card">
       <div class="card-header" @click="statusExpanded = !statusExpanded">
@@ -224,7 +260,11 @@ const toolsExpanded = ref(false)
 const mcpExpanded = ref(false)
 const skillsExpanded = ref(false)
 const ragExpanded = ref(true)
+const memoryExpanded = ref(false)
 const statusExpanded = ref(true)
+
+// 长期记忆
+const memory = ref({ enabled: true, count: 0, items: [] })
 
 const localToolCount = computed(() => tools.value.filter(t => !t.fromMcp).length)
 const localTools = computed(() => tools.value.filter(t => !t.fromMcp))
@@ -310,12 +350,72 @@ async function loadTrace() {
   }
 }
 
+// ==================== 长期记忆 ====================
+
+// 加载记忆列表与状态
+async function loadMemory() {
+  try {
+    const res = await fetch('/api/memory')
+    if (res.ok) {
+      const data = await res.json()
+      memory.value = {
+        enabled: !!data.enabled,
+        count: data.count || 0,
+        items: data.items || []
+      }
+    }
+  } catch (e) {
+    console.error('加载记忆失败', e)
+  }
+}
+
+// 开关记忆
+async function onToggleMemory(enabled) {
+  try {
+    await fetch('/api/memory/toggle', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled })
+    })
+    memory.value.enabled = enabled
+    if (!enabled) {
+      memory.value.items = []
+      memory.value.count = 0
+    } else {
+      loadMemory()
+    }
+  } catch (e) {
+    console.error('切换记忆失败', e)
+  }
+}
+
+// 删除单条记忆
+async function onDeleteMemory(id) {
+  try {
+    await fetch('/api/memory/' + encodeURIComponent(id), { method: 'DELETE' })
+    loadMemory()
+  } catch (e) {
+    console.error('删除记忆失败', e)
+  }
+}
+
+// 清空记忆
+async function onClearMemory() {
+  try {
+    await fetch('/api/memory/clear', { method: 'POST' })
+    loadMemory()
+  } catch (e) {
+    console.error('清空记忆失败', e)
+  }
+}
+
 onMounted(() => {
   loadTools()
   loadMcpStatus()
   loadSandboxStatus()
   loadSkills()
   loadTrace()
+  loadMemory()
   traceTimer = setInterval(loadTrace, 2500)
 })
 
@@ -604,6 +704,113 @@ onBeforeUnmount(() => {
   padding: 1px 4px;
   border-radius: 3px;
 }
+
+/* 长期记忆 */
+.mem-toggle {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  margin-left: auto;
+}
+.mem-toggle input {
+  display: none;
+}
+.toggle-slider {
+  width: 30px;
+  height: 16px;
+  border-radius: 10px;
+  background: #d1d5db;
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  transition: left 0.2s;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.toggle-slider.on {
+  background: #3b82f6;
+}
+.toggle-slider.on::after {
+  left: 16px;
+}
+.memory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.memory-item {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 5px 7px;
+}
+.memory-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.memory-cat {
+  font-size: 9px;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #dbeafe;
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+.memory-cat.fact { color: #0f766e; background: #ccfbf1; }
+.memory-cat.goal { color: #7c3aed; background: #ede9fe; }
+.memory-del {
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 0 2px;
+  line-height: 1;
+}
+.memory-del:hover { color: #ef4444; }
+.memory-content {
+  font-size: 11px;
+  color: #334155;
+  margin-top: 2px;
+  line-height: 1.5;
+}
+.memory-empty {
+  font-size: 11px;
+  color: #9ca3af;
+  padding: 4px 2px;
+  line-height: 1.6;
+}
+.memory-more {
+  font-size: 10px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+.memory-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+.mem-clear-btn {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #dc2626;
+  font-size: 10px;
+  border-radius: 4px;
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.mem-clear-btn:hover { background: #fee2e2; }
 
 /* Skills 列表 */
 .skill-list {

@@ -1,6 +1,9 @@
 package com.example.springharness.controller;
 
+import com.example.springharness.memory.ChatMemoryService;
+import com.example.springharness.memory.MemoryService;
 import com.example.springharness.service.MultiModelService;
+import com.example.springharness.service.PromptService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.client.ChatClient;
@@ -36,6 +39,9 @@ import java.util.Map;
 public class ChatController {
 
     private final MultiModelService multiModelService;
+    private final PromptService promptService;
+    private final MemoryService memoryService;
+    private final ChatMemoryService chatMemoryService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${MAX_TOKENS:4096}")
@@ -44,8 +50,28 @@ public class ChatController {
     /** 最多保留的历史消息条数 */
     private static final int MAX_HISTORY_MESSAGES = 20;
 
-    public ChatController(MultiModelService multiModelService) {
+    public ChatController(MultiModelService multiModelService,
+                          PromptService promptService,
+                          MemoryService memoryService,
+                          ChatMemoryService chatMemoryService) {
         this.multiModelService = multiModelService;
+        this.promptService = promptService;
+        this.memoryService = memoryService;
+        this.chatMemoryService = chatMemoryService;
+    }
+
+    /** 会话窗口记忆是否启用且传入了 conversationId */
+    private boolean useChatMemory(String conversationId) {
+        return chatMemoryService.isEnabled()
+                && conversationId != null && !conversationId.isBlank();
+    }
+
+    /** 组合系统提示：基础提示 + 长期记忆上下文 */
+    private String composeSystemPrompt(String systemPrompt, String message) {
+        String sys = (systemPrompt != null && !systemPrompt.isBlank())
+                ? systemPrompt
+                : promptService.chatPrompt();
+        return sys + memoryService.buildMemoryContext(message);
     }
 
     /** 非流式对话 */
@@ -57,17 +83,19 @@ public class ChatController {
             @RequestParam(required = false) Double temperature,
             @RequestParam(required = false) Integer maxTokens,
             @RequestParam(required = false) Double topP,
-            @RequestParam(required = false) String systemPrompt) {
+            @RequestParam(required = false) String systemPrompt,
+            @RequestParam(required = false) String conversationId) {
         ChatClient.Builder builder = multiModelService.createChatClientBuilder(model);
         var prompt = builder.build().prompt();
 
-        // 自定义系统提示词
-        if (systemPrompt != null && !systemPrompt.isBlank()) {
-            prompt.system(systemPrompt);
-        }
+        // 系统提示：默认 + 长期记忆
+        prompt.system(composeSystemPrompt(systemPrompt, message));
 
-        // 添加历史消息
-        List<Message> historyMessages = parseHistoryMessages(messages);
+        // 添加历史消息：启用会话窗口记忆时用后端窗口，否则用前端回传
+        boolean useChatMemory = useChatMemory(conversationId);
+        List<Message> historyMessages = useChatMemory
+                ? chatMemoryService.getHistory(conversationId)
+                : parseHistoryMessages(messages);
         if (!historyMessages.isEmpty()) {
             prompt.messages(historyMessages);
         }
@@ -86,7 +114,15 @@ public class ChatController {
             optionsBuilder.topP(topP);
         }
         prompt.options(optionsBuilder.build());
-        return prompt.call().content();
+        String answer = prompt.call().content();
+        // 抽取用户消息中的长期记忆（异步，不阻塞）
+        memoryService.extractAndStore(message, "chat");
+        // 写入会话窗口记忆（方案 B）
+        if (useChatMemory && answer != null) {
+            chatMemoryService.add(conversationId, List.of(
+                    new UserMessage(message), new AssistantMessage(answer)));
+        }
+        return answer;
     }
 
     /** 流式对话（SSE） */
@@ -98,17 +134,19 @@ public class ChatController {
             @RequestParam(required = false) Double temperature,
             @RequestParam(required = false) Integer maxTokens,
             @RequestParam(required = false) Double topP,
-            @RequestParam(required = false) String systemPrompt) {
+            @RequestParam(required = false) String systemPrompt,
+            @RequestParam(required = false) String conversationId) {
         ChatClient.Builder builder = multiModelService.createChatClientBuilder(model);
         var prompt = builder.build().prompt();
 
-        // 自定义系统提示词
-        if (systemPrompt != null && !systemPrompt.isBlank()) {
-            prompt.system(systemPrompt);
-        }
+        // 系统提示：默认 + 长期记忆
+        prompt.system(composeSystemPrompt(systemPrompt, message));
 
-        // 添加历史消息
-        List<Message> historyMessages = parseHistoryMessages(messages);
+        // 添加历史消息：启用会话窗口记忆时用后端窗口，否则用前端回传
+        boolean useChatMemory = useChatMemory(conversationId);
+        List<Message> historyMessages = useChatMemory
+                ? chatMemoryService.getHistory(conversationId)
+                : parseHistoryMessages(messages);
         if (!historyMessages.isEmpty()) {
             prompt.messages(historyMessages);
         }
@@ -127,7 +165,15 @@ public class ChatController {
             optionsBuilder.topP(topP);
         }
         prompt.options(optionsBuilder.build());
-        return prompt.stream().content();
+        return prompt.stream().content()
+                // 流式结束后抽取长期记忆 + 写入会话窗口（异步）
+                .doOnComplete(() -> {
+                    memoryService.extractAndStore(message, "chat");
+                    if (useChatMemory) {
+                        chatMemoryService.add(conversationId, List.of(new UserMessage(message)));
+                    }
+                })
+                .doOnError(e -> { });
     }
 
     /**

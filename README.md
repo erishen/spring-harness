@@ -13,6 +13,7 @@
 - **Skills**：可加载 resolve-skills 技能库（code-review、weekly-investment 等），对齐 Claude Code / Codex 开放标准
 - **Docker 代码沙箱**：隔离执行 **8 种语言**（python / javascript / shell / java / go / rust / c / cpp）
 - **长时任务**：SQLite 持久化，token 消耗统计、执行日志、可中断可续跑
+- **长期记忆（Memory）**：自动从对话抽取用户偏好/事实/目标 → 存 SQLite → 跨会话注入各模式 System prompt（方案 B 会话窗口记忆可选）
 - **Agnes 模型接入**：免费额度，自动限流（可切换 DeepSeek / DashScope 多模型）
 
 ## 技术栈
@@ -126,6 +127,32 @@ curl -N "http://localhost:8080/chat/stream?message=讲一个程序员笑话"
 | DELETE | `/rag/documents/{docId}` | 删除文档及其所有向量块 |
 | GET | `/rag/stats` | 文档统计信息 |
 | GET | `/rag/search?query=xxx&topK=5` | 语义检索（调试用） |
+| GET | `/api/memory` | 长期记忆列表 + 开关状态 |
+| POST | `/api/memory/toggle` | 开启/关闭记忆 `{"enabled": true}` |
+| POST | `/api/memory/clear` | 清空全部记忆 |
+| DELETE | `/api/memory/{id}` | 删除单条记忆 |
+
+### 长期记忆（Memory）
+
+自动从对话中抽取**稳定的用户偏好 / 事实 / 目标**（如「我喜欢用中文」「我常住上海」），存入 SQLite，在后续对话 / ReAct / PSE 中按当前问题检索并注入 System prompt，实现跨会话记忆。
+
+- 抽取前做**信号词预过滤**（命中「我喜欢/我是/我住在/我的目标」等才调用 LLM），控制成本与限流
+- 记忆按 `偏好 / 事实 / 目标` 分类，关键词 LIKE 检索 + 访问频率排序，取前 `MEMORY_TOP_K` 条注入
+- 管理：右侧 Runtime 面板 → Memory 卡片可查看 / 开关 / 清空 / 删除单条
+
+**配置项**（`.env`）：
+
+| 变量 | 默认 | 说明 |
+| --- | --- | --- |
+| `MEMORY_ENABLED` | `true` | 是否启用长期记忆 |
+| `MEMORY_EXTRACT_ENABLED` | `true` | 是否启用抽取（信号词命中才调 LLM） |
+| `MEMORY_TOP_K` | `5` | 每次注入的记忆条数 |
+| `MEMORY_MAX_ITEMS` | `200` | 记忆上限，超出删除最旧 |
+| `MEMORY_MODEL` | 空 | 抽取模型，留空跟随主模型 |
+| `MEMORY_CHAT_ENABLED` | `false` | 会话窗口记忆（方案 B）：按 conversationId 后端维护多轮窗口 |
+| `MEMORY_CHAT_WINDOW` | `20` | 会话窗口大小 |
+
+> 会话窗口记忆（方案 B）默认关闭：当前前端已通过 `messages` 参数回传历史，方案 B 供需要后端统一管理窗口的场景开启（`/chat` 与 `/chat/stream` 传入 `conversationId` 即生效）。
 
 ### Agent 模式示例
 

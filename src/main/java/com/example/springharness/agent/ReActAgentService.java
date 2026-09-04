@@ -1,5 +1,6 @@
 package com.example.springharness.agent;
 
+import com.example.springharness.memory.MemoryService;
 import com.example.springharness.pse.McpToolProvider;
 import com.example.springharness.service.MultiModelService;
 import org.springframework.ai.chat.messages.*;
@@ -42,6 +43,7 @@ public class ReActAgentService {
     private final TokenUsageTracker tokenUsageTracker;
     private final PromptService promptService;
     private final McpToolProvider mcpToolProvider;
+    private final MemoryService memoryService;
 
     @Value("${MAX_TOKENS:4096}")
     private int maxTokens;
@@ -52,12 +54,14 @@ public class ReActAgentService {
     public ReActAgentService(MultiModelService multiModelService, List<ToolCallback> toolCallbacks,
                              TokenUsageTracker tokenUsageTracker,
                              PromptService promptService,
-                             McpToolProvider mcpToolProvider) {
+                             McpToolProvider mcpToolProvider,
+                             MemoryService memoryService) {
         this.multiModelService = multiModelService;
         this.toolCallbacks = toolCallbacks;
         this.tokenUsageTracker = tokenUsageTracker;
         this.promptService = promptService;
         this.mcpToolProvider = mcpToolProvider;
+        this.memoryService = memoryService;
     }
 
     /**
@@ -113,9 +117,9 @@ public class ReActAgentService {
      */
     private String runStreamInternal(String userMessage, String model,
                                      Consumer<ReActStreamEvent> callback, BooleanSupplier cancelled) {
-        // 构建对话历史
+        // 构建对话历史：基础系统提示 + 长期记忆
         List<Message> messages = new ArrayList<>();
-        messages.add(new SystemMessage(buildSystemPrompt()));
+        messages.add(new SystemMessage(buildSystemPrompt(userMessage)));
         messages.add(new UserMessage(userMessage));
 
         // 记录每一轮的过程
@@ -206,6 +210,9 @@ public class ReActAgentService {
             }
         }
 
+        // 抽取用户消息中的长期记忆（异步）
+        memoryService.extractAndStore(userMessage, "react");
+
         return finalAnswer;
     }
 
@@ -260,8 +267,8 @@ public class ReActAgentService {
     /**
      * 构建 ReAct 系统提示。
      */
-    private String buildSystemPrompt() {
-        return promptService.reactAgentPrompt();
+    private String buildSystemPrompt(String userMessage) {
+        return promptService.reactAgentPrompt() + memoryService.buildMemoryContext(userMessage);
     }
 
     // ==================== 数据结构 ====================

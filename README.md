@@ -2,6 +2,8 @@
 
 基于 **Spring AI Alibaba**（阿里云百炼 / 通义千问 DashScope）的全栈 AI Agent 开发框架，国内直连、无需代理。
 
+> English | [中文文档](./README.zh.md)
+
 ## 功能特性
 
 - **五种交互模式**：普通对话 / RAG 知识库 / ReAct Agent / PSE 协作 / 长时任务

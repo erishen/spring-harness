@@ -344,13 +344,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  max-height: 220px;
-  overflow-y: auto;
-  padding-right: 2px;
 }
-.tool-grid::-webkit-scrollbar { width: 4px; }
-.tool-grid::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
-.tool-grid::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.2); }
 .tool-chip {
   display: inline-flex; align-items: center; padding: 5px 12px;
   background: #f3f4f6; border-radius: 6px; cursor: help;

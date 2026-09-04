@@ -14,7 +14,7 @@
           <span class="card-icon">🧰</span>
           <div class="card-titles">
             <span class="card-title">Tools</span>
-            <span class="card-sub">本地 {{ localToolCount }} · MCP {{ mcpToolCount }}</span>
+            <span class="card-sub">本地 {{ localToolCount }}</span>
           </div>
         </div>
       </div>
@@ -34,27 +34,36 @@
           </div>
         </div>
 
-        <!-- MCP 工具 -->
-        <div class="tool-group" v-if="mcpTools.length">
-          <div class="group-label">
-            <span class="group-dot mcp"></span>
-            <span>MCP 工具</span>
-            <span class="group-count">{{ mcpTools.length }}</span>
+        <div class="empty-hint" v-if="!localTools.length">加载中...</div>
+      </div>
+    </div>
+
+    <!-- MCP 外部工具（独立区域） -->
+    <div class="panel-card" v-if="mcpTools.length">
+      <div class="card-header" @click="mcpExpanded = !mcpExpanded">
+        <div class="card-title-group">
+          <span class="card-arrow" :class="{ expanded: mcpExpanded }">▶</span>
+          <span class="card-icon">🔌</span>
+          <div class="card-titles">
+            <span class="card-title">MCP</span>
+            <span class="card-sub">外部工具 · {{ mcpServers.length }} 服务</span>
           </div>
-          <div v-for="server in mcpServers" :key="server.name" class="mcp-server-block">
-            <div class="mcp-server-tag">
-              <span class="server-name">{{ server.name }}</span>
-              <span class="server-type">{{ server.type }}</span>
-            </div>
-            <div class="tool-grid">
-              <div class="tool-chip mcp" v-for="tool in server.tools" :key="tool.name" :title="tool.description">
-                <span class="tool-chip-name">{{ tool.name }}</span>
-              </div>
+        </div>
+        <span class="count-badge">{{ mcpTools.length }}</span>
+      </div>
+
+      <div class="card-body" v-show="mcpExpanded">
+        <div v-for="server in mcpServers" :key="server.name" class="mcp-server-block">
+          <div class="mcp-server-tag">
+            <span class="server-name">{{ server.name }}</span>
+            <span class="server-type">{{ server.type }}</span>
+          </div>
+          <div class="tool-grid">
+            <div class="tool-chip mcp" v-for="tool in server.tools" :key="tool.name" :title="tool.description">
+              <span class="tool-chip-name">{{ tool.name }}</span>
             </div>
           </div>
         </div>
-
-        <div class="empty-hint" v-if="!tools.length">加载中...</div>
       </div>
     </div>
 
@@ -212,12 +221,12 @@ let traceTimer = null
 
 // 折叠状态
 const toolsExpanded = ref(false)
+const mcpExpanded = ref(false)
 const skillsExpanded = ref(false)
 const ragExpanded = ref(true)
 const statusExpanded = ref(true)
 
 const localToolCount = computed(() => tools.value.filter(t => !t.fromMcp).length)
-const mcpToolCount = computed(() => tools.value.filter(t => t.fromMcp).length)
 const localTools = computed(() => tools.value.filter(t => !t.fromMcp))
 const mcpTools = computed(() => tools.value.filter(t => t.fromMcp))
 const hasRagTool = computed(() => tools.value.some(t => t.name === 'search_knowledge'))

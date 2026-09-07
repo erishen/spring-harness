@@ -7,6 +7,7 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,8 +43,10 @@ public class AgnesRateLimiter implements ClientHttpRequestInterceptor {
         this.backoffBaseMs = Math.max(backoffBaseMs, 1000);
     }
 
+    // Spring 的 ClientHttpRequestInterceptor 位于 @NonNullApi 包下，
+    // 重写方法必须显式声明返回非空，否则 IDE/编译器会报 null 约束不匹配。
     @Override
-    public ClientHttpResponse intercept(HttpRequest request, byte[] body,
+    public @NonNull ClientHttpResponse intercept(HttpRequest request, byte[] body,
                                         ClientHttpRequestExecution execution) throws IOException {
         // 1. 客户端节流：保证两次调用间隔 >= minIntervalMs
         throttle();

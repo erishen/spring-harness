@@ -10,6 +10,10 @@
 #   5. 巡检循环不用裸 wait（前端崩了脚本会一直挂着）：前端 kill -0 判活，
 #      后端用 HTTP 探针判活（管道 job 的 $! 是 tee，不是服务进程）
 #   6. 任一服务退出 → 打印是谁 + 各自日志尾部，exit 1；Ctrl+C → exit 0
+#   7. 后台 job 一律用「不 exec 的子壳」当组长：外部命令（mvn/node）直接放后台或
+#      在子壳里 exec，子进程可能抢在父 bash 的 setpgid 之前 exec → 父进程报
+#      「child setpgid: Operation not permitted」EPERM 噪音（进程组实际已由子进程
+#      自建成功，功能无碍，纯噪音）。子壳组长永不 exec，竞态窗口消失；$! 仍 = PGID。
 # ============================================================
 set -u
 
@@ -74,8 +78,11 @@ set -m   # 必须在起后台 job 之前
 BE_PROBE_URL="http://localhost:$PORT/actuator/health"
 
 # ---------- 后端 ----------
-"$MVN" spring-boot:run 2>&1 | tee "$BE_LOG" &
-BE_WRAP=$!   # 注意：这是管道末端 tee 的 pid，仅作进程存活性参考；判活以下方 HTTP 探针为准
+# 用「不 exec 的子壳」当组长：外部命令直接放后台时，子进程可能抢在父 bash 的
+# setpgid 之前 exec（机器满载时尤甚），父进程报「child setpgid: Operation not
+# permitted」（EPERM 噪音）。子壳组长不 exec，竞态不存在；$! 仍 = PGID。
+( "$MVN" spring-boot:run 2>&1 | tee "$BE_LOG" ) &
+BE_WRAP=$!   # 子壳 pid 即 PGID（子壳不 exec，稳定）；服务判活以下方 HTTP 探针为准
 
 echo "  等待后端就绪（最多 60 秒）..."
 if ! wait_ready "$BE_PROBE_URL" 60 "$BE_WRAP"; then
@@ -91,7 +98,8 @@ echo "  ✅ 后端已就绪 (: $PORT)"
 
 # ---------- 前端 ----------
 # 绕过 npm 包装直接起 vite（npm run dev 偶发挂起零输出；package.json 的 dev 本来就是裸 vite）
-( cd frontend && exec node node_modules/vite/bin/vite.js ) > "$FE_LOG" 2>&1 &
+# 注意子壳里不要写 exec：组长一 exec 就给父 bash 的 setpgid 制造竞态窗口（EPERM 噪音）
+( cd frontend && node node_modules/vite/bin/vite.js ) > "$FE_LOG" 2>&1 &
 FE_PID=$!
 
 echo "  等待前端就绪（最多 15 秒）..."

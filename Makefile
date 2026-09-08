@@ -8,7 +8,8 @@ export
 # 可覆盖的变量
 APP_NAME  ?= spring-harness
 MVN       ?= mvn
-PORT      ?= ${SERVER_PORT}
+# .env 缺 SERVER_PORT 时回退 8080（?=: 惰性展开，SERVER_PORT 为空则 PORT 也为空）
+PORT      ?= $(if $(SERVER_PORT),$(SERVER_PORT),8080)
 FRONTEND_PORT ?= 5174
 
 .PHONY: help dev run run-bg stop compile clean test package restart health \
@@ -19,33 +20,8 @@ help: ## 显示帮助（默认目标）
 	@echo ""
 	@echo "  配置文件：.env（已 gitignore），首次使用请 cp .env.example .env"
 
-dev: compile frontend-install ## 开发模式：先启动后端(8080)，就绪后再启动前端(5174)
-	@echo "清理旧进程..."
-	-@lsof -ti:${PORT} 2>/dev/null | xargs -r kill -9 2>/dev/null || true
-	-@lsof -ti:${FRONTEND_PORT} 2>/dev/null | xargs -r kill -9 2>/dev/null || true
-	-@pkill -f "spring-boot:run" 2>/dev/null || true
-	@sleep 1
-	@echo "确保运行时目录存在..."
-	@mkdir -p data/mcp-workspace logs/tasks
-	@echo ""
-	@echo "  🚀 启动后端 (端口 ${PORT})..."
-	@$(MVN) spring-boot:run 2>&1 | tee app.log &
-	@echo "  等待后端就绪（最多 30 秒）..."
-	@for i in $$(seq 1 30); do \
-		if curl -s -o /dev/null -m 3 "http://localhost:${PORT}/" 2>/dev/null; then \
-			echo "  ✅ 后端已就绪 ($$i 秒)"; \
-			break; \
-		fi; \
-		sleep 1; \
-		if [ $$i -eq 30 ]; then echo "  ⚠️  后端启动超时，请查看 app.log"; fi; \
-	done
-	@echo ""
-	@echo "  🌐 启动前端 (端口 ${FRONTEND_PORT})..."
-	@echo "  前端页面: http://localhost:${FRONTEND_PORT}"
-	@echo "  按 Ctrl+C 停止前后端"
-	@echo ""
-	@trap 'echo "\n  正在停止..."; pkill -f "spring-boot:run" 2>/dev/null; lsof -ti:${PORT} 2>/dev/null | xargs -r kill -9 2>/dev/null; lsof -ti:${FRONTEND_PORT} 2>/dev/null | xargs -r kill 2>/dev/null' EXIT; \
-	cd frontend && npm run dev
+dev: compile frontend-install ## 开发模式：一键起后端(8080)＋前端(5174)，任一崩溃立即报出是谁，Ctrl+C 一起退出
+	@PORT=$(PORT) FRONTEND_PORT=$(FRONTEND_PORT) MVN=$(MVN) bash scripts/dev.sh
 
 run: ## 仅启动后端（前台，自动加载 .env）
 	@mkdir -p data/mcp-workspace logs/tasks
